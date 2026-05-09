@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "682899753327",
+    "firebase_url": "https://sportshub-d44ef-default-rtdb.firebaseio.com",
+    "project_id": "sportshub-d44ef",
+    "storage_bucket": "sportshub-d44ef.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:682899753327:android:dd5f852419624d77db809a",
+        "android_client_info": {
+          "package_name": "com.example.sportsmate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqghs8GRuLtb5j2IfwLzPcdgNoeqHSDq4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

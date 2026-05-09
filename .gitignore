@@ -1,0 +1,61 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+.env
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configurations and currently installed extensions.
+# This folder should be checked in to source control to share with other developers.
+# .vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will create this file for you and it should not be checked in
+/android/key.properties
+/android/app/src/main/res/raw/google_services.json
+/ios/Runner/GoogleService-Info.plist
+
+# Gradle files
+.gradle/
+/android/app/src/main/res/values/google-services.json
+
+# macOS
+.DS_Store
+/macos/Flutter/ephemeral/
+
+# Windows
+/windows/flutter/ephemeral/
+/windows/CMakeCache.txt
+/windows/CMakeFiles/
+/windows/CMakeLists.txt.user
+/windows/flutter/generated_config.cmake
+
+# Linux
+/linux/flutter/ephemeral/
