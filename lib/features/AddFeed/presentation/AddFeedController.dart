@@ -5,51 +5,47 @@ import '../../auth/presentation/auth_controller.dart';
 import '../data/AddFeed_repository.dart';
 import '../domain/AddFeed_entity.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
+
 class AddFeedState {
   final bool isLoading;
-  final File? image;
+  final File? profileFile;
   final String visibility;
 
   AddFeedState({
     this.isLoading = false,
-    this.image,
+    this.profileFile,
     this.visibility = "Everyone",
   });
 
   AddFeedState copyWith({
     bool? isLoading,
-    File? image,
+    File? profileFile,
     String? visibility,
   }) {
     return AddFeedState(
       isLoading: isLoading ?? this.isLoading,
-      image: image ?? this.image,
+      profileFile: profileFile ?? this.profileFile,
       visibility: visibility ?? this.visibility,
     );
   }
 }
 
-final addFeedControllerProvider = StateNotifierProvider<AddFeedController, AddFeedState>((ref) {
-  return AddFeedController(ref);
+final addFeedControllerProvider = NotifierProvider<AddFeedController, AddFeedState>(() {
+  return AddFeedController();
 });
 
-class AddFeedController extends StateNotifier<AddFeedState> {
-  final Ref _ref;
+class AddFeedController extends Notifier<AddFeedState> {
   late AddFeedRepository _repository;
 
-  AddFeedController(this._ref) : super(AddFeedState()) {
-    _repository = _ref.read(addFeedRepositoryProvider);
-  }
-
-  Future<void> pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      state = state.copyWith(image: File(pickedFile.path));
-    }
+  @override
+  AddFeedState build() {
+    _repository = ref.read(addFeedRepositoryProvider);
+    return AddFeedState();
   }
 
   void removeImage() {
-    state = state.copyWith(image: null);
+    state = state.copyWith(profileFile: null);
   }
 
   void setVisibility(String visibility) {
@@ -57,11 +53,19 @@ class AddFeedController extends StateNotifier<AddFeedState> {
   }
 
   Future<bool> postFeed(String content) async {
-    final userProfile = _ref.read(userProfileProvider).value;
+    final userProfile = ref.read(userProfileProvider).value;
     if (userProfile == null) return false;
 
     state = state.copyWith(isLoading: true);
     try {
+      String mediaUrl = '';
+      if (state.profileFile != null) {
+        mediaUrl = await _repository.uploadFeedImage(
+          userProfile.uid,
+          state.profileFile!,
+        );
+      }
+
       final newFeed = FeedEntity(
         id: '',
         uid: userProfile.uid,
@@ -69,7 +73,7 @@ class AddFeedController extends StateNotifier<AddFeedState> {
         userProfileImage: userProfile.profilePic ?? 'https://i.pravatar.cc/150?u=${userProfile.uid}',
         title: '',
         description: content.trim(),
-        mediaUrl: state.image?.path ?? '',
+        mediaUrl: mediaUrl,
         date: DateTime.now(),
         likes: [],
       );

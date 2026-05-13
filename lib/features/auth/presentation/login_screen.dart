@@ -5,6 +5,7 @@ import 'forgot_password_screen.dart';
 import '../../home/presentation/home_screen.dart'; 
 import 'auth_controller.dart';
 import '../../../core/widgets/custom_text_field.dart';
+import '../../../core/theme/app_colors.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -69,11 +70,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.sports_soccer, size: 80, color: Colors.deepPurple),
+              const Icon(Icons.sports_soccer, size: 80, color: AppColors.primaryGreen),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 "Welcome Back!",
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 28, 
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
               ),
               const SizedBox(height: 40),
               CustomTextField(
@@ -109,6 +114,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 : ElevatedButton(
                     onPressed: _handleLogin,
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      foregroundColor: Colors.white,
                       minimumSize: const Size(double.infinity, 50),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),

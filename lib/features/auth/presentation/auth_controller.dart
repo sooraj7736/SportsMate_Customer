@@ -163,4 +163,8 @@ class AuthController extends Notifier<RegisterState> {
       state = state.copyWith(isLoading: false);
     }
   }
+
+  Future<void> signOut() async {
+    await _auth.signOut();
+  }
 }
