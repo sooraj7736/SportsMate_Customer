@@ -17,6 +17,7 @@ import 'home_controller.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:sportsmate/features/home/domain/ad_entity.dart';
+import 'package:sportsmate/features/tournament/presentation/tournament_list_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -95,6 +96,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ref.read(themeModeProvider.notifier).setThemeMode(val ? ThemeMode.dark : ThemeMode.light);
                 },
               ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.emoji_events),
+              title: const Text("Tournaments"),
+              onTap: () {
+                Navigator.pop(context); // Close drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const TournamentListScreen()),
+                );
+              },
             ),
             const Spacer(),
             const Divider(),

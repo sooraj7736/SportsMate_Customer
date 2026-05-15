@@ -16,6 +16,7 @@ class AddFeedScreen extends ConsumerStatefulWidget {
 class _AddFeedScreenState extends ConsumerState<AddFeedScreen> {
   final TextEditingController _contentController = TextEditingController();
   bool _isPostEnabled = false;
+  bool _isLoading = false;
   String _visibility = "Everyone";
   File? _image;
 
@@ -46,37 +47,50 @@ class _AddFeedScreenState extends ConsumerState<AddFeedScreen> {
   }
 
   Future<void> _handlePost() async {
-    if (!_isPostEnabled) return;
+    if (!_isPostEnabled || _isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
 
     final userProfile = ref.read(userProfileProvider).value;
     if (userProfile == null) {
+      setState(() {
+        _isLoading = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Error: User profile not found")),
       );
       return;
     }
 
-    // Logic for uploading image would go here if we had a storage service
-    // For now, we'll just save the feed with a local path or empty mediaUrl
-    final newFeed = FeedEntity(
-      id: '', 
-      uid: userProfile.uid,
-      username: userProfile.name,
-      userProfileImage: userProfile.profilePic ?? 'https://i.pravatar.cc/150?u=${userProfile.uid}',
-      title: '', 
-      description: _contentController.text.trim(),
-      mediaUrl: _image?.path ?? '', 
-      date: DateTime.now(),
-      likes: [],
-    );
-
     try {
+      String mediaUrl = '';
+      if (_image != null) {
+        mediaUrl = await ref.read(addFeedRepositoryProvider).uploadFeedImage(userProfile.uid, _image!);
+      }
+
+      final newFeed = FeedEntity(
+        id: '', 
+        uid: userProfile.uid,
+        username: userProfile.name,
+        userProfileImage: userProfile.profilePic ?? 'https://i.pravatar.cc/150?u=${userProfile.uid}',
+        title: '', 
+        description: _contentController.text.trim(),
+        mediaUrl: mediaUrl, 
+        date: DateTime.now(),
+        likes: [],
+      );
+
       await ref.read(addFeedRepositoryProvider).addFeed(newFeed);
       if (mounted) {
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Failed to post: $e")),
         );
@@ -203,7 +217,7 @@ class _AddFeedScreenState extends ConsumerState<AddFeedScreen> {
                     ),
                     const Spacer(),
                     ElevatedButton(
-                      onPressed: _isPostEnabled ? _handlePost : null,
+                      onPressed: (_isPostEnabled && !_isLoading) ? _handlePost : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
@@ -213,7 +227,13 @@ class _AddFeedScreenState extends ConsumerState<AddFeedScreen> {
                         ),
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       ),
-                      child: const Text("Post", style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blue),
+                            )
+                          : const Text("Post", style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
