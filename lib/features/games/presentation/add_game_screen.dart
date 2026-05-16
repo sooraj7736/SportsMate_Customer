@@ -91,19 +91,21 @@ class AddGameScreen extends ConsumerWidget {
 
           // 3. Match Privacy Access
           _buildCardFrame("Game Access", [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Who can discover this game?", style: TextStyle(fontSize: 14)),
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'Public', label: Text('Public')),
-                    ButtonSegment(value: 'Private', label: Text('Private')),
-                  ],
-                  selected: {state.gameAccess},
-                  onSelectionChanged: (set) => notifier.updateAccess(set.first),
-                )
-              ],
+            const Text(
+              "Who can discover this game?",
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(value: 'Public', label: Text('Public')),
+                  ButtonSegment(value: 'Private', label: Text('Private')),
+                ],
+                selected: {state.gameAccess},
+                onSelectionChanged: (set) => notifier.updateAccess(set.first),
+              ),
             )
           ]),
 
