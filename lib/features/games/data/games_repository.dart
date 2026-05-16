@@ -26,6 +26,46 @@ class GamesRepository {
     }
   }
 
+  Stream<List<GameEntity>> watchGamesHostedByMe(String userId) {
+    return _firestore
+        .collection('Games')
+        .where('hostId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) {
+          if (snapshot.docs.isEmpty) {
+            return <GameEntity>[];
+          }
+
+          final games = snapshot.docs
+              .map((doc) => GameEntity.fromMap(doc.data(), doc.id))
+              .toList();
+          
+          // Sort by date on client side
+          games.sort((a, b) => a.date.compareTo(b.date));
+          return games;
+        });
+  }
+
+  Stream<List<GameEntity>> watchGamesIHaveJoined(String userId) {
+    return _firestore.collection('Games').snapshots().map((snapshot) {
+      if (snapshot.docs.isEmpty) {
+        return <GameEntity>[];
+      }
+
+      final games = snapshot.docs
+          .map((doc) => GameEntity.fromMap(doc.data(), doc.id))
+          .where((game) => game.joinedPlayers.any((player) => player.uid == userId))
+          .toList();
+
+      if (games.isEmpty) {
+        return <GameEntity>[];
+      }
+
+      games.sort((a, b) => a.date.compareTo(b.date));
+      return games;
+    });
+  }
+
   // Listens to ALL games added by different users sorted by date
   Stream<List<GameEntity>> watchAllGames() {
     return _firestore

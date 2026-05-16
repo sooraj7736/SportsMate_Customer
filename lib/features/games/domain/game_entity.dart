@@ -80,7 +80,7 @@ class GameEntity {
       hostName: map['hostName'] ?? '',
       sportType: map['sportType'] ?? '',
       locationName: map['locationName'] ?? '',
-      date: (map['date'] as Timestamp).toDate(),
+      date: map['date'] != null ? (map['date'] as Timestamp).toDate() : DateTime.now(),
       startTime: map['startTime'] ?? '',
       endTime: map['endTime'] ?? '',
       gameAccess: map['gameAccess'] ?? 'Public',

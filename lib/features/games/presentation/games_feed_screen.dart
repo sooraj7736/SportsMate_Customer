@@ -7,6 +7,7 @@ import '../data/games_repository.dart';
 import '../domain/game_entity.dart';
 import 'add_game_screen.dart';
 import 'games_feed_controller.dart';
+import 'my_games_dashboard_screen.dart';
 
 class GamesFeedScreen extends ConsumerStatefulWidget {
   const GamesFeedScreen({super.key});
@@ -54,7 +55,29 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
             ),
           ],
         ),
-        actions: [],
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Center(
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MyGamesDashboardScreen()),
+                  );
+                },
+                icon: const Icon(Icons.my_library_books, size: 18),
+                label: const Text('My Games'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF1DB954),
+                  side: const BorderSide(color: Color(0xFF1DB954)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
