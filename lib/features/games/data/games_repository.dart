@@ -22,8 +22,38 @@ class GamesRepository {
         .collection('Games')
         .orderBy('date', descending: false)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => GameEntity.fromMap(doc.data(), doc.id))
-            .toList());
+        .map((snapshot) {
+          final games = snapshot.docs
+              .map((doc) => GameEntity.fromMap(doc.data(), doc.id))
+              .toList();
+
+          final now = DateTime.now();
+
+          games.sort((a, b) {
+            final aDateTime = _gameDateTime(a);
+            final bDateTime = _gameDateTime(b);
+            final aIsUpcoming = !aDateTime.isBefore(now);
+            final bIsUpcoming = !bDateTime.isBefore(now);
+
+            if (aIsUpcoming != bIsUpcoming) {
+              return aIsUpcoming ? -1 : 1;
+            }
+
+            if (aIsUpcoming) {
+              return aDateTime.compareTo(bDateTime);
+            }
+
+            return bDateTime.compareTo(aDateTime);
+          });
+
+          return games;
+        });
+  }
+
+  DateTime _gameDateTime(GameEntity game) {
+    final parts = game.startTime.split(':');
+    final hour = parts.length == 2 ? int.tryParse(parts[0]) ?? 0 : 0;
+    final minute = parts.length == 2 ? int.tryParse(parts[1]) ?? 0 : 0;
+    return DateTime(game.date.year, game.date.month, game.date.day, hour, minute);
   }
 }
