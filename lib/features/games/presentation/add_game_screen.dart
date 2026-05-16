@@ -222,6 +222,13 @@ class AddGameScreen extends ConsumerWidget {
                       numberOfPlayers: state.numberOfPlayers,
                       isCostShared: state.isCostShared,
                       bringEquipment: state.bringEquipment,
+                      joinedPlayers: [
+                        Participant(
+                          uid: currentUser?.uid ?? 'unknown_id',
+                          name: userProfile?.name ?? 'Athlete Host',
+                          isGuest: false,
+                        ),
+                      ],
                     );
 
                     // Send payload to Firestore via the repository provider

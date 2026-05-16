@@ -1,5 +1,33 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+class Participant {
+  final String uid;
+  final String name;
+  final bool isGuest;
+
+  const Participant({
+    required this.uid,
+    required this.name,
+    required this.isGuest,
+  });
+
+  factory Participant.fromMap(Map<String, dynamic> map) {
+    return Participant(
+      uid: map['uid'] ?? '',
+      name: map['name'] ?? '',
+      isGuest: map['isGuest'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'uid': uid,
+      'name': name,
+      'isGuest': isGuest,
+    };
+  }
+}
+
 class GameEntity {
   final String id;
   final String hostId;
@@ -15,6 +43,7 @@ class GameEntity {
   final int numberOfPlayers;
   final bool isCostShared;       // true/false
   final bool bringEquipment;     // true/false
+  final List<Participant> joinedPlayers;
 
   GameEntity({
     required this.id,
@@ -31,9 +60,20 @@ class GameEntity {
     required this.numberOfPlayers,
     required this.isCostShared,
     required this.bringEquipment,
+    this.joinedPlayers = const [],
   });
 
+  int get maxPlayers => numberOfPlayers;
+
   factory GameEntity.fromMap(Map<String, dynamic> map, String documentId) {
+    final joinedPlayersData = map['joinedPlayers'];
+    final joinedPlayers = joinedPlayersData is List
+        ? joinedPlayersData
+        .whereType<Map>()
+        .map((item) => Participant.fromMap(Map<String, dynamic>.from(item)))
+            .toList()
+        : const <Participant>[];
+
     return GameEntity(
       id: documentId,
       hostId: map['hostId'] ?? '',
@@ -49,6 +89,7 @@ class GameEntity {
       numberOfPlayers: map['numberOfPlayers'] ?? 10,
       isCostShared: map['isCostShared'] ?? false,
       bringEquipment: map['bringEquipment'] ?? false,
+      joinedPlayers: joinedPlayers,
     );
   }
 
@@ -67,6 +108,7 @@ class GameEntity {
       'numberOfPlayers': numberOfPlayers,
       'isCostShared': isCostShared,
       'bringEquipment': bringEquipment,
+      'joinedPlayers': joinedPlayers.map((participant) => participant.toMap()).toList(),
     };
   }
 }

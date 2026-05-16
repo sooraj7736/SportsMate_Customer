@@ -16,6 +16,16 @@ class GamesRepository {
     await _firestore.collection('Games').add(game.toMap());
   }
 
+  Future<void> joinGame(String gameId, List<Map<String, dynamic>> newParticipants) async {
+    try {
+      await _firestore.collection('Games').doc(gameId).update({
+        'joinedPlayers': FieldValue.arrayUnion(newParticipants),
+      });
+    } catch (error) {
+      rethrow;
+    }
+  }
+
   // Listens to ALL games added by different users sorted by date
   Stream<List<GameEntity>> watchAllGames() {
     return _firestore

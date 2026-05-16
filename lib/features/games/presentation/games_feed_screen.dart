@@ -1,6 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:sportsmate/features/auth/presentation/auth_controller.dart';
+import '../data/games_repository.dart';
+import '../domain/game_entity.dart';
 import 'add_game_screen.dart';
 import 'games_feed_controller.dart';
 
@@ -315,6 +319,12 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                             itemBuilder: (context, index) {
                               final game = filteredGames[index];
                               final isPublic = game.gameAccess == 'Public';
+                              final filledSpots = game.joinedPlayers.length;
+                              final maxPlayers = game.maxPlayers;
+                              final progressValue = maxPlayers <= 0
+                                  ? 0.0
+                                  : (filledSpots / maxPlayers).clamp(0.0, 1.0);
+                              final isMatchFull = filledSpots >= maxPlayers;
 
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 14),
@@ -431,16 +441,24 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                         ],
                                       ),
                                       const SizedBox(height: 6),
-                                      Row(
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          const Spacer(),
                                           Text(
-                                            '${game.numberOfPlayers} slots',
+                                            '$filledSpots / $maxPlayers Spots Filled',
                                             style: const TextStyle(
                                               fontWeight: FontWeight.w800,
                                               color: _primaryGreen,
                                               fontSize: 13,
                                             ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          LinearProgressIndicator(
+                                            value: progressValue,
+                                            minHeight: 6,
+                                            backgroundColor: const Color(0xFFE7ECEF),
+                                            valueColor: const AlwaysStoppedAnimation<Color>(_primaryGreen),
+                                            borderRadius: BorderRadius.circular(999),
                                           ),
                                         ],
                                       ),
@@ -454,6 +472,29 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                             style: const TextStyle(fontSize: 12.5, color: Colors.black54),
                                           ),
                                         ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton(
+                                          onPressed: isMatchFull
+                                              ? null
+                                              : () => showJoinGameBottomSheet(context, game, ref),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: _primaryGreen,
+                                            foregroundColor: Colors.white,
+                                            disabledBackgroundColor: Colors.grey[300],
+                                            disabledForegroundColor: Colors.black54,
+                                            padding: const EdgeInsets.symmetric(vertical: 12),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(14),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            isMatchFull ? 'Match Full' : 'Join',
+                                            style: const TextStyle(fontWeight: FontWeight.w800),
+                                          ),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -519,4 +560,297 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
       ),
     );
   }
+}
+
+Future<void> showJoinGameBottomSheet(BuildContext context, GameEntity game, WidgetRef ref) {
+  final currentUser = FirebaseAuth.instance.currentUser;
+  final currentUserName = _resolveCurrentUserName(currentUser, ref);
+  final currentUserUid = currentUser?.uid;
+
+  if (currentUserUid == null) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Sign in required'),
+        content: const Text('Please sign in before joining a game.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: Colors.transparent,
+    builder: (sheetContext) => _JoinGameBottomSheet(
+      game: game,
+      ref: ref,
+      currentUserName: currentUserName,
+      currentUserUid: currentUserUid,
+    ),
+  );
+}
+
+class _JoinGameBottomSheet extends StatefulWidget {
+  final GameEntity game;
+  final WidgetRef ref;
+  final String currentUserName;
+  final String currentUserUid;
+
+  const _JoinGameBottomSheet({
+    required this.game,
+    required this.ref,
+    required this.currentUserName,
+    required this.currentUserUid,
+  });
+
+  @override
+  State<_JoinGameBottomSheet> createState() => _JoinGameBottomSheetState();
+}
+
+class _JoinGameBottomSheetState extends State<_JoinGameBottomSheet> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  static const Color _accentGreen = Color(0xFF1DB954);
+  bool _selfAdded = false;
+  final List<TextEditingController> _guestControllers = [];
+
+  @override
+  void dispose() {
+    for (final controller in _guestControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _confirmRegistration() async {
+    if (!_selfAdded) {
+      return;
+    }
+
+    final isValid = _formKey.currentState?.validate() ?? false;
+    if (!isValid) {
+      return;
+    }
+
+    final participantPayloads = <Map<String, dynamic>>[
+      Participant(
+        uid: widget.currentUserUid,
+        name: widget.currentUserName,
+        isGuest: false,
+      ).toMap(),
+      ..._guestControllers.asMap().entries.map(
+        (entry) => Participant(
+          uid: widget.currentUserUid,
+          name: entry.value.text.trim(),
+          isGuest: true,
+        ).toMap(),
+      ),
+    ];
+
+    await widget.ref.read(gamesRepositoryProvider).joinGame(widget.game.id, participantPayloads);
+
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.black12,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Join ${widget.game.sportType} game',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Tap to add yourself, then add any guest players joining with you.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    if (_selfAdded) {
+                      return;
+                    }
+
+                    setState(() {
+                      _selfAdded = true;
+                    });
+                  },
+                  icon: Icon(_selfAdded ? Icons.check_circle : Icons.person_add_alt_1),
+                  label: Text(_selfAdded ? 'Added' : 'Add Myself'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _selfAdded ? _accentGreen : Colors.black87,
+                    side: BorderSide(color: _selfAdded ? _accentGreen : Colors.black12),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+              if (_selfAdded) ...[
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF2FBF5),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: _accentGreen.withValues(alpha: 0.18)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.person, color: _accentGreen, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          widget.currentUserName,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.check_circle, color: _accentGreen, size: 18),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              Flexible(
+                child: Form(
+                  key: _formKey,
+                  child: ListView(
+                    shrinkWrap: true,
+                    physics: const BouncingScrollPhysics(),
+                    children: [
+                      ..._guestControllers.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final controller = entry.value;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: TextFormField(
+                            controller: controller,
+                            decoration: InputDecoration(
+                              labelText: 'Guest Player ${index + 1}',
+                              border: const OutlineInputBorder(),
+                              suffixIcon: IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    controller.dispose();
+                                    _guestControllers.removeAt(index);
+                                  });
+                                },
+                                icon: const Icon(Icons.close),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Enter a guest name';
+                              }
+                              return null;
+                            },
+                          ),
+                        );
+                      }),
+                      TextButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _guestControllers.add(TextEditingController());
+                          });
+                        },
+                        icon: const Icon(Icons.person_add_alt_1),
+                        label: const Text('+ Add Guest Player'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _selfAdded ? _confirmRegistration : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1DB954),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey[300],
+                    disabledForegroundColor: Colors.black45,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: const Text(
+                    'Confirm Registration',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _resolveCurrentUserName(User? currentUser, WidgetRef ref) {
+  final profileName = ref.read(userProfileProvider).value?.name.trim();
+  if (profileName != null && profileName.isNotEmpty) {
+    return profileName;
+  }
+
+  final displayName = currentUser?.displayName?.trim();
+  if (displayName != null && displayName.isNotEmpty) {
+    return displayName;
+  }
+
+  final emailName = currentUser?.email?.split('@').first.trim();
+  if (emailName != null && emailName.isNotEmpty) {
+    return emailName;
+  }
+
+  return 'Player';
 }
