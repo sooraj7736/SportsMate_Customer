@@ -13,6 +13,7 @@ class GamesFeedScreen extends ConsumerStatefulWidget {
 
 class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
   DateTime? _selectedDay;
+  String? _selectedSport;
 
   static const Color _primaryGreen = Color(0xFF1DB954);
 
@@ -51,42 +52,38 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
         ),
         actions: [],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddGameScreen()),
+          );
+        },
+        backgroundColor: _primaryGreen,
+        icon: const Icon(Icons.add, size: 24),
+        label: const Text(
+          'Add Game',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+        ),
+      ),
       body: Stack(
         children: [
           gamesStream.when(
             data: (gamesList) {
-              final filteredGames = _selectedDay == null
-                  ? gamesList
-                  : gamesList.where((game) => DateUtils.isSameDay(game.date, _selectedDay)).toList();
+              final filteredGames = gamesList.where((game) {
+                // Filter by selected day
+                if (_selectedDay != null && !DateUtils.isSameDay(game.date, _selectedDay)) {
+                  return false;
+                }
+                // Filter by selected sport
+                if (_selectedSport != null && _selectedSport != 'All' && game.sportType != _selectedSport) {
+                  return false;
+                }
+                return true;
+              }).toList();
 
               return Column(
                 children: [
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const AddGameScreen()),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _primaryGreen,
-                          foregroundColor: Colors.white,
-                          elevation: 3,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        ),
-                        icon: const Icon(Icons.add, size: 18),
-                        label: const Text(
-                          'Add Game',
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
-                        ),
-                      ),
-                    ),
-                  ),
                   Container(
                     width: double.infinity,
                     margin: const EdgeInsets.fromLTRB(14, 14, 14, 12),
@@ -219,6 +216,66 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                             style: const TextStyle(fontSize: 12.5, color: Colors.black54, fontWeight: FontWeight.w500),
                           ),
                         ],
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                    child: Row(
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () {},
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _primaryGreen.withValues(alpha: 0.10),
+                            foregroundColor: _primaryGreen,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          ),
+                          icon: const Icon(Icons.location_on_outlined, size: 16),
+                          label: const Text(
+                            '25 km',
+                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        const Text(
+                          'Sport:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: DropdownButton<String>(
+                            underline: const SizedBox(),
+                            value: _selectedSport ?? 'All',
+                            items: ['All', 'Football', 'Basketball', 'Tennis', 'Cricket', 'Volleyball'].map((sport) {
+                              return DropdownMenuItem<String>(
+                                value: sport,
+                                child: Text(sport),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedSport = value == 'All' ? null : value;
+                              });
+                            },
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                              color: Colors.black87,
+                            ),
+                            icon: const Icon(Icons.expand_more, size: 18, color: Colors.black54),
+                          ),
+                        ),
                       ],
                     ),
                   ),
