@@ -159,6 +159,26 @@ class GamesFeedScreen extends ConsumerWidget {
                             ],
                           ),
                           const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _buildInfoChip(
+                                icon: Icons.calendar_month_outlined,
+                                label: DateFormat('EEE, MMM d').format(game.date),
+                                backgroundColor: const Color(0xFFF1F5FF),
+                                foregroundColor: const Color(0xFF3451B2),
+                              ),
+                              if (game.startTime.isNotEmpty && game.endTime.isNotEmpty)
+                                _buildInfoChip(
+                                  icon: Icons.access_time,
+                                  label: "${_formatStoredTime(game.startTime)} - ${_formatStoredTime(game.endTime)}",
+                                  backgroundColor: const Color(0xFFF2FBF5),
+                                  foregroundColor: _primaryGreen,
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
                           Row(
                             children: [
                               const Icon(Icons.place_outlined, size: 16, color: Colors.black54),
@@ -174,12 +194,6 @@ class GamesFeedScreen extends ConsumerWidget {
                           const SizedBox(height: 6),
                           Row(
                             children: [
-                              const Icon(Icons.calendar_month_outlined, size: 16, color: Colors.black54),
-                              const SizedBox(width: 6),
-                              Text(
-                                DateFormat('EEE, MMM d').format(game.date),
-                                style: const TextStyle(color: Colors.black54),
-                              ),
                               const Spacer(),
                               Text(
                                 "${game.numberOfPlayers} slots",
@@ -191,19 +205,6 @@ class GamesFeedScreen extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          if (game.startTime.isNotEmpty && game.endTime.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                const Icon(Icons.access_time, size: 16, color: Colors.black45),
-                                const SizedBox(width: 6),
-                                Text(
-                                  "${_formatStoredTime(game.startTime)} - ${_formatStoredTime(game.endTime)}",
-                                  style: const TextStyle(fontSize: 12.5, color: Colors.black54),
-                                ),
-                              ],
-                            ),
-                          ],
                           const SizedBox(height: 6),
                           Row(
                             children: [
@@ -265,5 +266,35 @@ class GamesFeedScreen extends ConsumerWidget {
     } catch (_) {
       return value;
     }
+  }
+
+  static Widget _buildInfoChip({
+    required IconData icon,
+    required String label,
+    required Color backgroundColor,
+    required Color foregroundColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: foregroundColor),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: foregroundColor,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
