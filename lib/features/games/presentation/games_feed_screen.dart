@@ -219,7 +219,7 @@ class GamesFeedScreen extends ConsumerWidget {
                 ),
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text(
-                  "+ Add Games",
+                  "Add Games",
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                 ),
               ),
