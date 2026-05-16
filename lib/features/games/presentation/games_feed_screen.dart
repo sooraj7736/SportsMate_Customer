@@ -163,6 +163,19 @@ class GamesFeedScreen extends ConsumerWidget {
                               ),
                             ],
                           ),
+                          if (game.startTime.isNotEmpty && game.endTime.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                const Icon(Icons.access_time, size: 16, color: Colors.black45),
+                                const SizedBox(width: 6),
+                                Text(
+                                  "${_formatStoredTime(game.startTime)} - ${_formatStoredTime(game.endTime)}",
+                                  style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+                                ),
+                              ],
+                            ),
+                          ],
                           const SizedBox(height: 6),
                           Row(
                             children: [
@@ -215,5 +228,14 @@ class GamesFeedScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  static String _formatStoredTime(String value) {
+    try {
+      final parsed = DateFormat('HH:mm').parse(value);
+      return DateFormat.jm().format(parsed);
+    } catch (_) {
+      return value;
+    }
   }
 }

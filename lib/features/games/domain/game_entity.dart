@@ -7,6 +7,8 @@ class GameEntity {
   final String sportType;
   final String locationName;
   final DateTime date;
+  final String startTime;        // 24h format: HH:mm
+  final String endTime;          // 24h format: HH:mm
   final String gameAccess;       // 'Public' or 'Private'
   final bool matchSkillFromProfile; // true/false
   final bool isPaid;             // true/false
@@ -21,6 +23,8 @@ class GameEntity {
     required this.sportType,
     required this.locationName,
     required this.date,
+    required this.startTime,
+    required this.endTime,
     required this.gameAccess,
     required this.matchSkillFromProfile,
     required this.isPaid,
@@ -37,6 +41,8 @@ class GameEntity {
       sportType: map['sportType'] ?? '',
       locationName: map['locationName'] ?? '',
       date: (map['date'] as Timestamp).toDate(),
+      startTime: map['startTime'] ?? '',
+      endTime: map['endTime'] ?? '',
       gameAccess: map['gameAccess'] ?? 'Public',
       matchSkillFromProfile: map['matchSkillFromProfile'] ?? false,
       isPaid: map['isPaid'] ?? false,
@@ -53,6 +59,8 @@ class GameEntity {
       'sportType': sportType,
       'locationName': locationName,
       'date': Timestamp.fromDate(date),
+      'startTime': startTime,
+      'endTime': endTime,
       'gameAccess': gameAccess,
       'matchSkillFromProfile': matchSkillFromProfile,
       'isPaid': isPaid,

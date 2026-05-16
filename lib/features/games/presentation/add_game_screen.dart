@@ -19,6 +19,37 @@ class AddGameScreen extends ConsumerWidget {
     final now = DateTime.now();
     final availableDays = List.generate(14, (index) => now.add(Duration(days: index)));
 
+    Future<void> pickStartTime() async {
+      final picked = await showTimePicker(
+        context: context,
+        initialTime: state.startTime,
+      );
+
+      if (picked != null) {
+        notifier.updateStartTime(picked);
+      }
+    }
+
+    Future<void> pickEndTime() async {
+      final picked = await showTimePicker(
+        context: context,
+        initialTime: state.endTime,
+      );
+
+      if (picked == null) {
+        return;
+      }
+
+      if (_toMinutes(picked) <= _toMinutes(state.startTime)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("End time must be later than start time")),
+        );
+        return;
+      }
+
+      notifier.updateEndTime(picked);
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -89,7 +120,34 @@ class AddGameScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
 
-          // 3. Match Privacy Access
+          // 3. Time Slot
+          _buildCardFrame("Time Slot", [
+            const Text("Choose starting and ending time", style: TextStyle(fontSize: 14)),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildTimeButton(
+                    context: context,
+                    title: "Start",
+                    value: _formatTime(context, state.startTime),
+                    onPressed: pickStartTime,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildTimeButton(
+                    context: context,
+                    title: "End",
+                    value: _formatTime(context, state.endTime),
+                    onPressed: pickEndTime,
+                  ),
+                ),
+              ],
+            ),
+          ]),
+
+          // 4. Match Privacy Access
           _buildCardFrame("Game Access", [
             const Text(
               "Who can discover this game?",
@@ -109,7 +167,7 @@ class AddGameScreen extends ConsumerWidget {
             )
           ]),
 
-          // 4. Counters and Options Matrix
+          // 5. Counters and Options Matrix
           _buildCardFrame("Players Configuration", [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -128,7 +186,7 @@ class AddGameScreen extends ConsumerWidget {
             _buildToggleRow("Match skill levels via Profile Info?", state.matchSkillFromProfile, (_) => notifier.toggleSkillMatch()),
           ]),
 
-          // 5. Costing & Gear Toggles
+          // 6. Costing & Gear Toggles
           _buildCardFrame("Pricing & Setup", [
             _buildToggleRow("Is this a Paid Match booking?", state.isPaid, (_) => notifier.togglePaid()),
             if (state.isPaid) ...[
@@ -156,6 +214,8 @@ class AddGameScreen extends ConsumerWidget {
                       sportType: state.sportType,
                       locationName: state.locationName,
                       date: state.selectedDate,
+                      startTime: _toStorageTime(state.startTime),
+                      endTime: _toStorageTime(state.endTime),
                       gameAccess: state.gameAccess,
                       matchSkillFromProfile: state.matchSkillFromProfile,
                       isPaid: state.isPaid,
@@ -181,6 +241,53 @@ class AddGameScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  static Widget _buildTimeButton({
+    required BuildContext context,
+    required String title,
+    required String value,
+    required VoidCallback onPressed,
+  }) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(color: Colors.grey[300]!),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.access_time, size: 16, color: Color(0xFF1DB954)),
+              const SizedBox(width: 6),
+              Text(
+                value,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _formatTime(BuildContext context, TimeOfDay time) {
+    final now = DateTime.now();
+    final value = DateTime(now.year, now.month, now.day, time.hour, time.minute);
+    return DateFormat.jm().format(value);
+  }
+
+  static int _toMinutes(TimeOfDay time) => time.hour * 60 + time.minute;
+
+  static String _toStorageTime(TimeOfDay time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return "$hour:$minute";
   }
 
   // Visual helper grouping structural rows into card panels matching reference screenshots
