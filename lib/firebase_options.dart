@@ -90,4 +90,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'sportshub-d44ef.firebasestorage.app',
     measurementId: 'G-5JQCVZJXKE',
   );
+
 }
