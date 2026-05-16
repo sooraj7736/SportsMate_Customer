@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:sportsmate/features/auth/presentation/auth_controller.dart';
 import 'add_game_controller.dart';
 import '../domain/game_entity.dart';
 import '../data/games_repository.dart';
@@ -13,6 +14,7 @@ class AddGameScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(addGameControllerProvider);
     final notifier = ref.read(addGameControllerProvider.notifier);
+    final userProfile = ref.watch(userProfileProvider).value;
 
     final now = DateTime.now();
     final availableDays = List.generate(14, (index) => now.add(Duration(days: index)));
@@ -148,7 +150,7 @@ class AddGameScreen extends ConsumerWidget {
                     final gamePayload = GameEntity(
                       id: '', // Left blank; Firestore generates this dynamically
                       hostId: currentUser?.uid ?? 'unknown_id',
-                      hostName: currentUser?.displayName ?? 'Athlete Host',
+                      hostName: userProfile?.name ?? 'Athlete Host',
                       sportType: state.sportType,
                       locationName: state.locationName,
                       date: state.selectedDate,
