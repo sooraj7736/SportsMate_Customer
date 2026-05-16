@@ -49,33 +49,7 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
             ),
           ],
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Center(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AddGameScreen()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _primaryGreen,
-                  foregroundColor: Colors.white,
-                  elevation: 3,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text(
-                  'Add Game',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
-                ),
-              ),
-            ),
-          ),
-        ],
+        actions: [],
       ),
       body: Stack(
         children: [
@@ -87,23 +61,49 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
 
               return Column(
                 children: [
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const AddGameScreen()),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _primaryGreen,
+                          foregroundColor: Colors.white,
+                          elevation: 3,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        ),
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text(
+                          'Add Game',
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
+                        ),
+                      ),
+                    ),
+                  ),
                   Container(
                     width: double.infinity,
                     margin: const EdgeInsets.fromLTRB(14, 14, 14, 12),
                     padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFF4FBF6), Color(0xFFFFFFFF)],
+                        colors: [Color(0xFFE8F8F1), Color(0xFFF0FDF5)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _primaryGreen.withValues(alpha: 0.12)),
-                      boxShadow: const [
+                      border: Border.all(color: _primaryGreen.withValues(alpha: 0.25)),
+                      boxShadow: [
                         BoxShadow(
-                          color: Color(0x0F000000),
-                          blurRadius: 18,
-                          offset: Offset(0, 8),
+                          color: _primaryGreen.withValues(alpha: 0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
                         ),
                       ],
                     ),
@@ -262,15 +262,16 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 14),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: const Color(0xFFFAFBFC),
                                   borderRadius: BorderRadius.circular(18),
                                   boxShadow: const [
                                     BoxShadow(
-                                      color: Color(0x12000000),
-                                      blurRadius: 16,
-                                      offset: Offset(0, 8),
+                                      color: Color(0x08000000),
+                                      blurRadius: 12,
+                                      offset: Offset(0, 4),
                                     ),
                                   ],
+                                  border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(14.0),
