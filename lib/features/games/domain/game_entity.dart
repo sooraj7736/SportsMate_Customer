@@ -44,6 +44,11 @@ class GameEntity {
   final bool isCostShared;       // true/false
   final bool bringEquipment;     // true/false
   final List<Participant> joinedPlayers;
+  final String? turfId;
+  final bool isVerifiedTurf;
+  final double? lat;
+  final double? lng;
+  final String? customAddress;
 
   GameEntity({
     required this.id,
@@ -61,6 +66,11 @@ class GameEntity {
     required this.isCostShared,
     required this.bringEquipment,
     this.joinedPlayers = const [],
+    this.turfId,
+    this.isVerifiedTurf = false,
+    this.lat,
+    this.lng,
+    this.customAddress,
   });
 
   int get maxPlayers => numberOfPlayers;
@@ -90,6 +100,11 @@ class GameEntity {
       isCostShared: map['isCostShared'] ?? false,
       bringEquipment: map['bringEquipment'] ?? false,
       joinedPlayers: joinedPlayers,
+      turfId: map['turfId'],
+      isVerifiedTurf: map['isVerifiedTurf'] ?? false,
+      lat: (map['lat'] as num?)?.toDouble(),
+      lng: (map['lng'] as num?)?.toDouble(),
+      customAddress: map['customAddress'],
     );
   }
 
@@ -109,6 +124,11 @@ class GameEntity {
       'isCostShared': isCostShared,
       'bringEquipment': bringEquipment,
       'joinedPlayers': joinedPlayers.map((participant) => participant.toMap()).toList(),
+      'turfId': turfId,
+      'isVerifiedTurf': isVerifiedTurf,
+      'lat': lat,
+      'lng': lng,
+      'customAddress': customAddress,
     };
   }
 }

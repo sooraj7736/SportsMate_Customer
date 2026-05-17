@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart' as geo;
 
 class LocationPicker extends StatefulWidget {
   final double initialLatitude;
@@ -100,6 +101,65 @@ class _LocationPickerState extends State<LocationPicker> {
   void _showError(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  Future<void> _getCurrentLocation() async {
+    bool serviceEnabled;
+    geo.LocationPermission permission;
+
+    serviceEnabled = await geo.Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      _showError("Location services are disabled.");
+      return;
+    }
+
+    permission = await geo.Geolocator.checkPermission();
+    if (permission == geo.LocationPermission.denied) {
+      permission = await geo.Geolocator.requestPermission();
+      if (permission == geo.LocationPermission.denied) {
+        _showError("Location permissions are denied");
+        return;
+      }
+    }
+    
+    if (permission == geo.LocationPermission.deniedForever) {
+      _showError("Location permissions are permanently denied.");
+      return;
+    } 
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      geo.Position position = await geo.Geolocator.getCurrentPosition(
+        desiredAccuracy: geo.LocationAccuracy.high
+      );
+      
+      final lat = position.latitude;
+      final lng = position.longitude;
+      
+      final newPoint = Point(coordinates: Position(lng, lat));
+      
+      setState(() {
+        _selectedPoint = newPoint;
+      });
+
+      _mapboxMap?.setCamera(CameraOptions(
+        center: newPoint,
+        zoom: 14.0,
+      ));
+
+      widget.onLocationSelected(lat, lng);
+    } catch (e) {
+      _showError("Failed to get location: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+        });
+      }
     }
   }
 
@@ -217,6 +277,10 @@ class _LocationPickerState extends State<LocationPicker> {
               ),
             ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _getCurrentLocation,
+        child: const Icon(Icons.my_location),
       ),
     );
   }

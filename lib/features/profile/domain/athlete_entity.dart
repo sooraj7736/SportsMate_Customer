@@ -1,3 +1,30 @@
+class Address {
+  final String name;
+  final double lat;
+  final double lng;
+  final String addressText;
+
+  Address({
+    required this.name,
+    required this.lat,
+    required this.lng,
+    required this.addressText,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {'name': name, 'lat': lat, 'lng': lng, 'addressText': addressText};
+  }
+
+  factory Address.fromMap(Map<String, dynamic> map) {
+    return Address(
+      name: map['name'] ?? '',
+      lat: map['lat']?.toDouble() ?? 0.0,
+      lng: map['lng']?.toDouble() ?? 0.0,
+      addressText: map['addressText'] ?? '',
+    );
+  }
+}
+
 class Athlete {
   final String uid;
   final String username;
@@ -5,7 +32,7 @@ class Athlete {
   final String email;
   final List<String> favoriteSports;
   final String skillLevel;
-  final String? profilePic; // New Field
+  final String? profilePic;
 
   Athlete({
     required this.uid,

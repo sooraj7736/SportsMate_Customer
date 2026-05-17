@@ -13,6 +13,32 @@ final profileRepositoryProvider = Provider((ref) {
   );
 });
 
+final userAddressesStreamProvider = StreamProvider.autoDispose<List<Map<String, dynamic>>>((ref) {
+  final uid = ref.watch(authStateProvider).value?.uid;
+  if (uid == null) return Stream.value([]);
+  return FirebaseFirestore.instance
+      .collection('addresses')
+      .where('uid', isEqualTo: uid)
+      .snapshots()
+      .map((snapshot) => snapshot.docs.map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return data;
+          }).toList());
+});
+
+final activeAddressStreamProvider = StreamProvider.autoDispose<Map<String, dynamic>?>((ref) {
+  final uid = ref.watch(authStateProvider).value?.uid;
+  if (uid == null) return Stream.value(null);
+  return FirebaseFirestore.instance
+      .collection('addresses')
+      .where('uid', isEqualTo: uid)
+      .where('isActive', isEqualTo: true)
+      .limit(1)
+      .snapshots()
+      .map((snapshot) => snapshot.docs.isNotEmpty ? snapshot.docs.first.data() : null);
+});
+
 class ProfileRepository {
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
@@ -29,7 +55,7 @@ class ProfileRepository {
   }
 
   Future<void> saveAthleteProfile(Athlete athlete) async {
-    return _users.doc(athlete.uid).set(athlete.toMap(), SetOptions(merge: true));
+    await _users.doc(athlete.uid).set(athlete.toMap(), SetOptions(merge: true));
   }
 
   Future<Athlete?> getAthleteProfile(String uid) async {

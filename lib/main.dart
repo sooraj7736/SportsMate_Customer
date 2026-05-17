@@ -6,7 +6,8 @@ import 'package:sportsmate/firebase_options.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'core/theme/app_theme.dart';
 import 'core/providers/common_providers.dart';
-import 'main_wrapper.dart';
+
+import 'features/splash/presentation/nearplay_splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,12 +36,12 @@ class MyApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     
     return MaterialApp(
-      title: 'SportsMate',
+      title: 'NearPlay',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
-      home: const MainWrapper(),
+      home: const NearPlaySplashScreen(),
     );
   }
 }

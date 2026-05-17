@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Primary Palette
-  static const Color primaryGreen = Color(0xFF2ECC71); 
-  static const Color deepPitch = Color(0xFF1B2631);    
+  static const Color primaryGreen = Color(0xFF0F5132); 
+  static const Color deepPitch = Color(0xFF0D1B2A);    
   static const Color achievementGold = Color(0xFFF1C40F);
   
   // Light Mode Colors

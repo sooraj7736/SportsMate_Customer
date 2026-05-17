@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/custom_dropdown.dart';
+import '../../../core/widgets/location_picker.dart';
 import 'auth_controller.dart';
 import 'login_screen.dart';
 
@@ -21,11 +22,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final passwordController = TextEditingController();
   final usernameController = TextEditingController();
   final sportsController = TextEditingController();
+  final addressNameController = TextEditingController();
+  final addressTextController = TextEditingController();
   
   String selectedSkill = "Beginner";
   final List<String> skillLevels = ["Beginner", "Intermediate", "Pro"];
   File? _image;
   Timer? _debounce;
+  
+  double? _selectedLat;
+  double? _selectedLng;
 
   @override
   void dispose() {
@@ -35,6 +41,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     passwordController.dispose();
     usernameController.dispose();
     sportsController.dispose();
+    addressNameController.dispose();
+    addressTextController.dispose();
     super.dispose();
   }
 
@@ -75,6 +83,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return;
     }
 
+    if (_selectedLat == null || _selectedLng == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select your location on the map.')),
+      );
+      return;
+    }
+
+    if (addressNameController.text.trim().isEmpty || addressTextController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter an address name and details.')),
+      );
+      return;
+    }
+
     try {
       await ref.read(authControllerProvider.notifier).signUp(
         email: emailController.text.trim(),
@@ -83,6 +105,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         username: usernameController.text.trim(),
         selectedSports: sportsList,
         skillLevel: selectedSkill,
+        addressName: addressNameController.text.trim(),
+        addressText: addressTextController.text.trim(),
+        lat: _selectedLat!,
+        lng: _selectedLng!,
         profileFile: _image,
       );
       if (mounted) {
@@ -192,6 +218,45 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               controller: sportsController, 
               label: "Interested Games (comma separated)", 
               icon: Icons.sports_tennis,
+            ),
+            
+            const SizedBox(height: 10),
+            CustomTextField(
+              controller: addressNameController, 
+              label: "Address Label (e.g. Home, Work)", 
+              icon: Icons.label_outline,
+            ),
+            
+            CustomTextField(
+              controller: addressTextController, 
+              label: "Address Details", 
+              icon: Icons.location_city_outlined,
+            ),
+
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LocationPicker(
+                      onLocationSelected: (lat, lng) {
+                        setState(() {
+                          _selectedLat = lat;
+                          _selectedLng = lng;
+                        });
+                      },
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.map),
+              label: Text(_selectedLat != null ? "Location Selected on Map" : "Pick Location on Map"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _selectedLat != null ? Colors.green : Colors.grey[200],
+                foregroundColor: _selectedLat != null ? Colors.white : Colors.black87,
+                elevation: 0,
+              ),
             ),
 
             const SizedBox(height: 10),

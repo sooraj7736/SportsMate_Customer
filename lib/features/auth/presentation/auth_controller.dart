@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/providers/common_providers.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../profile/domain/athlete_entity.dart';
@@ -107,6 +108,10 @@ class AuthController extends Notifier<RegisterState> {
     required String username,
     required List<String> selectedSports,
     required String skillLevel,
+    required String addressName,
+    required String addressText,
+    required double lat,
+    required double lng,
     File? profileFile,
   }) async {
     state = state.copyWith(isLoading: true);
@@ -137,6 +142,17 @@ class AuthController extends Notifier<RegisterState> {
       );
 
       await _profileRepository.saveAthleteProfile(athlete);
+
+      // Save initial address directly in the standalone addresses collection
+      final id = FirebaseFirestore.instance.collection('addresses').doc().id;
+      await FirebaseFirestore.instance.collection('addresses').doc(id).set({
+        'uid': athlete.uid,
+        'name': 'Default Address',
+        'addressText': addressText,
+        'lat': lat,
+        'lng': lng,
+        'isActive': true,
+      });
     } finally {
       state = state.copyWith(isLoading: false);
     }

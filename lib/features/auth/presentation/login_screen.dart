@@ -5,7 +5,7 @@ import 'forgot_password_screen.dart';
 import '../../home/presentation/home_screen.dart'; 
 import 'auth_controller.dart';
 import '../../../core/widgets/custom_text_field.dart';
-import '../../../core/theme/app_colors.dart';
+
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -70,7 +70,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.sports_soccer, size: 80, color: AppColors.primaryGreen),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.asset(
+                  'assets/nearplay.png',
+                  height: 120,
+                  fit: BoxFit.contain,
+                ),
+              ),
               const SizedBox(height: 20),
               Text(
                 "Welcome Back!",

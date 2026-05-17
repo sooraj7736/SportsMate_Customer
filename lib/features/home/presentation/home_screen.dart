@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,23 +12,24 @@ import 'package:sportsmate/features/profile/data/profile_repository.dart';
 import 'package:sportsmate/features/profile/domain/athlete_entity.dart';
 import 'package:sportsmate/features/chat/presentation/chat_list_screen.dart';
 import 'package:sportsmate/features/chat/data/chat_repository.dart';
-import 'package:sportsmate/core/providers/common_providers.dart';
-import 'package:sportsmate/features/auth/presentation/auth_controller.dart';
 import 'home_controller.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:sportsmate/features/home/domain/ad_entity.dart';
 import 'package:sportsmate/features/tournament/presentation/tournament_list_screen.dart';
 import 'package:sportsmate/features/games/presentation/games_feed_screen.dart';
+import 'package:sportsmate/features/notifications/presentation/notifications_screen.dart';
+import 'package:sportsmate/features/friends/presentation/friends_screen.dart';
+import 'package:sportsmate/features/friends/presentation/user_profile_screen.dart';
 
-class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+class HomeFeedView extends ConsumerStatefulWidget {
+  const HomeFeedView({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeFeedView> createState() => _HomeFeedViewState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeFeedViewState extends ConsumerState<HomeFeedView> {
   @override
   Widget build(BuildContext context) {
     final feedListAsync = ref.watch(feedListStreamProvider);
@@ -39,7 +41,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0.5,
         title: Text(
-          "SportsMate",
+          "NearPlay",
           style: TextStyle(
             color: Theme.of(context).primaryColor,
             fontWeight: FontWeight.w900,
@@ -50,7 +52,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.notifications_none, color: Theme.of(context).iconTheme.color),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+              );
+            },
           ),
           IconButton(
             icon: Icon(Icons.send_outlined, color: Theme.of(context).iconTheme.color),
@@ -63,87 +70,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-      drawer: Drawer(
-        child: Column(
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor,
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const CircleAvatar(
-                      radius: 30,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.person, size: 40, color: Colors.blue),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      ref.watch(userProfileProvider).value?.name ?? "Athlete",
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.brightness_6),
-              title: const Text("Dark Mode"),
-              trailing: Switch(
-                value: ref.watch(themeModeProvider) == ThemeMode.dark,
-                onChanged: (val) {
-                  ref.read(themeModeProvider.notifier).setThemeMode(val ? ThemeMode.dark : ThemeMode.light);
-                },
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.emoji_events),
-              title: const Text("Tournaments"),
-              onTap: () {
-                Navigator.pop(context); // Close drawer
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const TournamentListScreen()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.sports_soccer),
-              title: const Text("Games"),
-              onTap: () {
-                Navigator.pop(context); // Close drawer
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const GamesFeedScreen()),
-                );
-              },
-            ),
-            const Spacer(),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text("Logout", style: TextStyle(color: Colors.red)),
-              onTap: () {
-                ref.read(authControllerProvider.notifier).signOut();
-              },
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddFeedScreen()),
-          );
-        },
-        backgroundColor: Theme.of(context).primaryColor,
-        elevation: 4,
-        child: const Icon(Icons.add, color: Colors.white, size: 30),
-      ),
       body: feedListAsync.when(
         data: (feeds) {
           return adsAsync.when(
@@ -151,7 +77,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               final mixedItems = _getMixedItems(feeds, ads);
               
               if (mixedItems.isEmpty) {
-                return _buildEmptyState();
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    await ref.refresh(feedListStreamProvider.future);
+                    await ref.refresh(adListStreamProvider.future);
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.only(top: 8, bottom: 80),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      _buildComposerCard(context),
+                      const SizedBox(height: 40),
+                      _buildEmptyState(),
+                    ],
+                  ),
+                );
               }
               
               return RefreshIndicator(
@@ -161,9 +101,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 },
                 child: ListView.builder(
                   padding: const EdgeInsets.only(top: 8, bottom: 80),
-                  itemCount: mixedItems.length,
+                  itemCount: mixedItems.length + 1,
                   itemBuilder: (context, index) {
-                    final item = mixedItems[index];
+                    if (index == 0) {
+                      return _buildComposerCard(context);
+                    }
+                    final item = mixedItems[index - 1];
                     if (item is FeedEntity) {
                       return FeedItem(feed: item);
                     } else if (item is AdEntity) {
@@ -207,6 +150,125 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
     
     return mixed;
+  }
+
+  Widget _buildComposerCard(BuildContext context) {
+    final userProfileAsync = ref.watch(userProfileProvider);
+    final userProfile = userProfileAsync.value;
+    final avatarUrl = userProfile?.profilePic;
+    final displayName = userProfile?.username ?? "Friend";
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(
+          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+          width: 0.8,
+        ),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddFeedScreen()),
+          );
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: const Color(0x1A0F5132),
+                    backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+                        ? NetworkImage(avatarUrl)
+                        : null,
+                    child: avatarUrl == null || avatarUrl.isEmpty
+                        ? Icon(Icons.person, color: Theme.of(context).primaryColor)
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.grey.shade900 : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Text(
+                        "What's on your mind, $displayName?",
+                        style: TextStyle(
+                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Divider(
+                color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                height: 1,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildComposerAction(
+                    icon: Icons.photo_library_outlined,
+                    color: const Color(0xFF2E7D32),
+                    label: "Photo",
+                  ),
+                  _buildComposerAction(
+                    icon: Icons.camera_alt_outlined,
+                    color: const Color(0xFF1565C0),
+                    label: "Camera",
+                  ),
+                  _buildComposerAction(
+                    icon: Icons.sports_soccer_outlined,
+                    color: const Color(0xFFE65100),
+                    label: "Game",
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildComposerAction({required IconData icon, required Color color, required String label}) {
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey,
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildEmptyState() {
@@ -580,7 +642,7 @@ class _FeedItemState extends ConsumerState<FeedItem> {
                       const Text("Share Post", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                       TextButton.icon(
                         onPressed: () {
-                          Clipboard.setData(ClipboardData(text: "Check out this post on SportsMate: ${widget.feed.id}"));
+                          Clipboard.setData(ClipboardData(text: "Check out this post on NearPlay: ${widget.feed.id}"));
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Link copied to clipboard!")),
                           );
@@ -698,35 +760,51 @@ class _FeedItemState extends ConsumerState<FeedItem> {
             padding: const EdgeInsets.all(12.0),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundImage: widget.feed.userProfileImage.startsWith('http')
-                      ? NetworkImage(widget.feed.userProfileImage)
-                      : null,
-                  child: !widget.feed.userProfileImage.startsWith('http')
-                      ? const Icon(Icons.person)
-                      : null,
-                ),
-                const SizedBox(width: 10),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.feed.username,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserProfileScreen(userId: widget.feed.uid),
                         ),
-                      ),
-                      Text(
-                        DateFormat('MMM d • h:mm a').format(widget.feed.date),
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: 11,
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundImage: widget.feed.userProfileImage.startsWith('http')
+                              ? NetworkImage(widget.feed.userProfileImage)
+                              : null,
+                          child: !widget.feed.userProfileImage.startsWith('http')
+                              ? const Icon(Icons.person)
+                              : null,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.feed.username,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              Text(
+                                DateFormat('MMM d • h:mm a').format(widget.feed.date),
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 IconButton(
@@ -853,6 +931,96 @@ class _InteractionIcon extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class HomeScreen extends ConsumerStatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  int _currentIndex = 0;
+
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      const HomeFeedView(),
+      const GamesFeedScreen(),
+      const TournamentListScreen(),
+      const FriendsScreen(),
+      UserProfileScreen(userId: FirebaseAuth.instance.currentUser?.uid ?? ''),
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedColor = Theme.of(context).primaryColor;
+    
+    return Scaffold(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _pages,
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: selectedColor,
+          unselectedItemColor: Colors.grey.shade500,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+          backgroundColor: Colors.white,
+          elevation: 0,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.sports_soccer_outlined),
+              activeIcon: Icon(Icons.sports_soccer),
+              label: 'Games',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.emoji_events_outlined),
+              activeIcon: Icon(Icons.emoji_events),
+              label: 'Tournaments',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.people_outline),
+              activeIcon: Icon(Icons.people),
+              label: 'Friends',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'Profile',
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

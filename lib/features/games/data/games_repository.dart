@@ -106,4 +106,91 @@ class GamesRepository {
     final minute = parts.length == 2 ? int.tryParse(parts[1]) ?? 0 : 0;
     return DateTime(game.date.year, game.date.month, game.date.day, hour, minute);
   }
+
+  // Send game invitation
+  Future<void> sendGameInvitation({
+    required String gameId,
+    required String hostId,
+    required String hostName,
+    required String invitedUserId,
+    required String sportType,
+    required DateTime date,
+    required String locationName,
+  }) async {
+    final docId = '${gameId}_${invitedUserId}';
+    await _firestore.collection('game_invitations').doc(docId).set({
+      'id': docId,
+      'gameId': gameId,
+      'sportType': sportType,
+      'date': Timestamp.fromDate(date),
+      'locationName': locationName,
+      'hostId': hostId,
+      'hostName': hostName,
+      'invitedUserId': invitedUserId,
+      'status': 'pending',
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // Accept game invitation
+  Future<void> acceptGameInvitation({
+    required String invitationId,
+    required String gameId,
+    required Map<String, dynamic> participantPayload,
+  }) async {
+    final batch = _firestore.batch();
+    
+    // 1. Add participant to the game document
+    final gameRef = _firestore.collection('Games').doc(gameId);
+    batch.update(gameRef, {
+      'joinedPlayers': FieldValue.arrayUnion([participantPayload]),
+    });
+
+    // 2. Delete the invitation document
+    final inviteRef = _firestore.collection('game_invitations').doc(invitationId);
+    batch.delete(inviteRef);
+
+    await batch.commit();
+  }
+
+  // Decline game invitation
+  Future<void> declineGameInvitation({
+    required String invitationId,
+  }) async {
+    await _firestore.collection('game_invitations').doc(invitationId).delete();
+  }
+
+  // Stream of incoming game invitations
+  Stream<List<Map<String, dynamic>>> watchIncomingGameInvitations(String invitedUserId) {
+    return _firestore
+        .collection('game_invitations')
+        .where('invitedUserId', isEqualTo: invitedUserId)
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+  }
+
+  // Stream of sent invitations for a specific game (returns a list of UIDs)
+  Stream<List<String>> watchSentInvitationsForGame(String gameId) {
+    return _firestore
+        .collection('game_invitations')
+        .where('gameId', isEqualTo: gameId)
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()['invitedUserId'] as String).toList());
+  }
 }
+
+final incomingGameInvitationsStreamProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  final userAsync = ref.watch(authStateProvider);
+  final user = userAsync.value;
+  if (user == null) return Stream.value([]);
+  
+  final gamesRepo = ref.watch(gamesRepositoryProvider);
+  return gamesRepo.watchIncomingGameInvitations(user.uid);
+});
+
+final sentInvitationsForGameStreamProvider = StreamProvider.family<List<String>, String>((ref, gameId) {
+  final gamesRepo = ref.watch(gamesRepositoryProvider);
+  return gamesRepo.watchSentInvitationsForGame(gameId);
+});
