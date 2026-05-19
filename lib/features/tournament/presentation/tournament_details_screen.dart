@@ -4,6 +4,10 @@ import 'package:sportsmate/features/tournament/domain/tournament_entity.dart';
 import 'package:sportsmate/features/tournament/data/tournament_repository.dart';
 import 'package:sportsmate/features/auth/presentation/auth_controller.dart';
 import 'package:intl/intl.dart';
+import 'package:sportsmate/features/tournament/live_score/data/football_live_score_repository.dart';
+import 'package:sportsmate/features/tournament/live_score/domain/football_live_score_entity.dart';
+import 'package:sportsmate/features/tournament/live_score/presentation/add_football/add_football_live_score_screen.dart';
+import 'package:sportsmate/features/tournament/live_score/presentation/view_football/view_football_live_score_screen.dart';
 
 class TournamentDetailsScreen extends ConsumerStatefulWidget {
   final TournamentEntity tournament;
@@ -16,6 +20,8 @@ class TournamentDetailsScreen extends ConsumerStatefulWidget {
 
 class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScreen> {
   bool _isGeneratingFixtures = false;
+
+  bool get _isFootballTournament => widget.tournament.sport.toLowerCase() == 'football';
 
   void _generateFixtures() async {
     final t = widget.tournament;
@@ -437,7 +443,10 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
       }
     }
 
+    final liveScoreAsync = _isFootballTournament ? ref.watch(footballLiveScoreStreamProvider(t.id)) : const AsyncValue.data(null);
+
     return GestureDetector(
+      behavior: HitTestBehavior.deferToChild,
       onTap: isHost ? () => _editMatchSchedule(fixture) : null,
       child: Container(
         width: 220,
@@ -478,12 +487,47 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                       color: hasSchedule ? Colors.green.shade800 : Colors.blue.shade800,
                     ),
                   ),
-                  if (isHost)
-                    Icon(
-                      Icons.calendar_today,
-                      size: 12,
-                      color: hasSchedule ? Colors.green : Colors.blue,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_isFootballTournament) ...[
+                        IconButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => ViewFootballLiveScoreScreen(tournament: t)),
+                            );
+                          },
+                          icon: const Icon(Icons.visibility, size: 16),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                          tooltip: 'View live score',
+                        ),
+                        if (isHost)
+                          IconButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => AddFootballLiveScoreScreen(tournament: t)),
+                              );
+                            },
+                            icon: const Icon(Icons.edit, size: 16),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                            tooltip: 'Update live score',
+                          ),
+                      ],
+                      if (isHost)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 6.0),
+                          child: Icon(
+                            Icons.calendar_today,
+                            size: 12,
+                            color: hasSchedule ? Colors.green : Colors.blue,
+                          ),
+                        ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -516,6 +560,103 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                 ),
               ),
             ),
+            // Live score snippet on card (compact)
+            if (_isFootballTournament) ...[
+              const Divider(height: 1, thickness: 1, color: Colors.black12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: liveScoreAsync.when(
+                  data: (score) {
+                    if (score == null) {
+                      return Row(
+                        children: [
+                          Expanded(child: Text(isHost ? 'No live score yet. You can add one.' : 'No live score posted.')),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => ViewFootballLiveScoreScreen(tournament: t)),
+                              );
+                            },
+                            icon: const Icon(Icons.visibility, size: 16),
+                            label: const Text('View', style: TextStyle(fontSize: 12)),
+                            style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10)),
+                          ),
+                          if (isHost) ...[
+                            const SizedBox(width: 6),
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => AddFootballLiveScoreScreen(tournament: t)),
+                                );
+                              },
+                              icon: const Icon(Icons.edit, size: 16),
+                              label: const Text('Update', style: TextStyle(fontSize: 12)),
+                              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10)),
+                            ),
+                          ]
+                        ],
+                      );
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(child: Text(score.hostTeamName, style: const TextStyle(fontWeight: FontWeight.w600))),
+                            Text('${score.hostTeamScore} - ${score.guestTeamScore}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            Expanded(child: Text(score.guestTeamName, textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.w600))),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Text(score.matchStatus, style: const TextStyle(fontSize: 12)),
+                            const Spacer(),
+                            if (score.minute != null) Text('Min ${score.minute}', style: const TextStyle(fontSize: 12)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => ViewFootballLiveScoreScreen(tournament: t)),
+                                );
+                              },
+                              icon: const Icon(Icons.visibility, size: 16),
+                              label: const Text('View', style: TextStyle(fontSize: 12)),
+                              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10)),
+                            ),
+                            const SizedBox(width: 8),
+                            if (isHost)
+                              OutlinedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => AddFootballLiveScoreScreen(tournament: t)),
+                                  );
+                                },
+                                icon: const Icon(Icons.edit, size: 16),
+                                label: const Text('Update', style: TextStyle(fontSize: 12)),
+                                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10)),
+                              ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                  loading: () => const SizedBox(height: 36, child: Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))),
+                  error: (err, st) => Text('Live score unavailable', style: TextStyle(color: Colors.red.shade600)),
+                ),
+              ),
+            ],
             // Schedule Badge
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -552,11 +693,112 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
     );
   }
 
+  Widget _buildLiveScoreCard(BuildContext context, bool isHost, TournamentEntity tournament, AsyncValue<FootballLiveScoreEntity?> liveScoreAsync) {
+    return liveScoreAsync.when(
+      data: (liveScore) {
+        final score = liveScore;
+        final hasScore = score != null;
+        return Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.orange.shade200),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Football Live Score',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: hasScore ? Colors.green.shade50 : Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        score?.matchStatus ?? 'No score posted',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: hasScore ? Colors.green.shade800 : Colors.orange.shade800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (score != null) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(child: Text(score.hostTeamName, style: const TextStyle(fontWeight: FontWeight.w600))),
+                      const SizedBox(width: 8),
+                      Text('${score.hostTeamScore} - ${score.guestTeamScore}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(score.guestTeamName, textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.w600))),
+                    ],
+                  ),
+                  if (score.minute != null) ...[
+                    const SizedBox(height: 8),
+                    Text('Minute: ${score.minute}'),
+                  ],
+                ] else ...[
+                  Text(
+                    isHost
+                        ? 'No live score has been posted yet. Add the first update for this tournament.'
+                        : 'The host has not posted a live score yet.',
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => isHost
+                                  ? AddFootballLiveScoreScreen(tournament: tournament)
+                                  : ViewFootballLiveScoreScreen(tournament: tournament),
+                            ),
+                          );
+                        },
+                        icon: Icon(isHost ? Icons.edit : Icons.visibility),
+                        label: Text(isHost ? 'Update Live Score' : 'View Live Score'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 12.0),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, stack) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0),
+        child: Text('Failed to load live score: $err'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = widget.tournament;
     final userProfile = ref.watch(userProfileProvider).value;
     final isHost = userProfile?.uid == t.hostUid;
+    final liveScoreAsync = _isFootballTournament ? ref.watch(footballLiveScoreStreamProvider(t.id)) : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -601,6 +843,10 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                 leading: const Icon(Icons.emoji_events),
                 title: Text("Prize Pool: ${t.prizePool}"),
               ),
+            if (_isFootballTournament && liveScoreAsync != null) ...[
+              const SizedBox(height: 8),
+              _buildLiveScoreCard(context, isHost, t, liveScoreAsync),
+            ],
             const SizedBox(height: 16),
 
             // Teams Section
@@ -733,40 +979,70 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: isHost
-              ? (t.isFixtureGenerated
-                  ? Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: _isGeneratingFixtures ? null : _generateFixtures,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red.shade700,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            icon: _isGeneratingFixtures
-                                ? const SizedBox.shrink()
-                                : const Icon(Icons.refresh),
-                            label: _isGeneratingFixtures
-                                ? const CircularProgressIndicator(color: Colors.white)
-                                : const Text("Reset & Re-generate Bracket"),
-                          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_isFootballTournament) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => isHost
+                              ? AddFootballLiveScoreScreen(tournament: t)
+                              : ViewFootballLiveScoreScreen(tournament: t),
                         ),
-                      ],
-                    )
-                  : ElevatedButton(
-                      onPressed: _isGeneratingFixtures ? null : _generateFixtures,
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
-                      child: _isGeneratingFixtures ? const CircularProgressIndicator(color: Colors.white) : const Text("Set Fixtures Bracket"),
-                    ))
-              : (t.isFixtureGenerated
-                  ? const ElevatedButton(onPressed: null, child: Text("Registration Closed"))
-                  : ElevatedButton(
-                      onPressed: _showJoinDialog,
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
-                      child: const Text("Join Tournament"),
-                    )),
+                      );
+                    },
+                    icon: Icon(isHost ? Icons.edit : Icons.visibility),
+                    label: Text(isHost ? 'Update Live Score' : 'View Live Score'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              isHost
+                  ? (t.isFixtureGenerated
+                      ? Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: _isGeneratingFixtures ? null : _generateFixtures,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red.shade700,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                                icon: _isGeneratingFixtures
+                                    ? const SizedBox.shrink()
+                                    : const Icon(Icons.refresh),
+                                label: _isGeneratingFixtures
+                                    ? const CircularProgressIndicator(color: Colors.white)
+                                    : const Text("Reset & Re-generate Bracket"),
+                              ),
+                            ),
+                          ],
+                        )
+                      : ElevatedButton(
+                          onPressed: _isGeneratingFixtures ? null : _generateFixtures,
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
+                          child: _isGeneratingFixtures ? const CircularProgressIndicator(color: Colors.white) : const Text("Set Fixtures Bracket"),
+                        ))
+                  : (t.isFixtureGenerated
+                      ? const ElevatedButton(onPressed: null, child: Text("Registration Closed"))
+                      : ElevatedButton(
+                          onPressed: _showJoinDialog,
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
+                          child: const Text("Join Tournament"),
+                        )),
+            ],
+          ),
         ),
       ),
     );
