@@ -9,6 +9,7 @@ import 'package:sportsmate/features/notifications/data/notifications_repository.
 import 'package:sportsmate/features/notifications/domain/notification_entity.dart';
 import 'package:sportsmate/features/profile/data/profile_repository.dart';
 import 'package:sportsmate/features/profile/domain/athlete_entity.dart';
+import 'package:sportsmate/features/sports/data/sports_catalog.dart';
 import '../data/games_repository.dart';
 import '../domain/game_entity.dart';
 import 'add_game_screen.dart';
@@ -53,6 +54,10 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
     final activeAddress = activeAddressMap != null
         ? Address.fromMap(activeAddressMap)
         : null;
+    final sportsAsync = ref.watch(sportsCatalogProvider);
+    final availableSports = sportsAsync.asData?.value ?? const [];
+    final sportNames = ['All', ...availableSports.map((sport) => sport.name)];
+    final selectedSport = _selectedSport != null && sportNames.contains(_selectedSport) ? _selectedSport : 'All';
     final monthDays = _buildCurrentMonthDays();
 
     return Scaffold(
@@ -507,21 +512,10 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                           ),
                           child: DropdownButton<String>(
                             underline: const SizedBox(),
-                            value: _selectedSport ?? 'All',
-                            items:
-                                [
-                                  'All',
-                                  'Football',
-                                  'Basketball',
-                                  'Tennis',
-                                  'Cricket',
-                                  'Volleyball',
-                                ].map((sport) {
-                                  return DropdownMenuItem<String>(
-                                    value: sport,
-                                    child: Text(sport),
-                                  );
-                                }).toList(),
+                            value: selectedSport,
+                            items: sportNames
+                                .map((sport) => DropdownMenuItem<String>(value: sport, child: Text(sport)))
+                                .toList(),
                             onChanged: (value) {
                               setState(() {
                                 _selectedSport = value == 'All' ? null : value;

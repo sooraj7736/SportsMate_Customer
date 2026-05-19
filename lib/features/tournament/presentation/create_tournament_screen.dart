@@ -6,6 +6,7 @@ import 'package:sportsmate/features/auth/presentation/auth_controller.dart';
 import 'package:sportsmate/features/tournament/data/tournament_repository.dart';
 import 'package:sportsmate/features/tournament/domain/tournament_entity.dart';
 import 'package:sportsmate/core/widgets/location_picker.dart';
+import 'package:sportsmate/features/sports/data/sports_catalog.dart';
 import 'package:intl/intl.dart';
 
 class CreateTournamentScreen extends ConsumerStatefulWidget {
@@ -27,7 +28,7 @@ class _CreateTournamentScreenState extends ConsumerState<CreateTournamentScreen>
   final TextEditingController _contactPhoneController = TextEditingController();
   final TextEditingController _customAddressController = TextEditingController();
 
-  String _selectedSport = 'Football';
+  String _selectedSport = '';
   String? _selectedLocationId;
   List<Map<String, dynamic>> _availableTurfs = [];
   bool _isOtherLocation = false;
@@ -38,8 +39,6 @@ class _CreateTournamentScreenState extends ConsumerState<CreateTournamentScreen>
   File? _posterImage;
   bool _isBoosted = false;
   bool _isLoading = false;
-
-  final List<String> _sports = ['Football', 'Cricket', 'Basketball', 'Badminton', 'Volleyball', 'Tennis', 'Other'];
 
   @override
   void initState() {
@@ -116,6 +115,11 @@ class _CreateTournamentScreenState extends ConsumerState<CreateTournamentScreen>
       return;
     }
 
+    final sportsAsync = ref.read(sportsCatalogProvider);
+    final availableSports = sportsAsync.asData?.value ?? const [];
+    final sportNames = availableSports.isNotEmpty ? availableSports.map((sport) => sport.name).toList() : ['Football'];
+    final selectedSport = sportNames.contains(_selectedSport) ? _selectedSport : sportNames.first;
+
     setState(() {
       _isLoading = true;
     });
@@ -145,7 +149,7 @@ class _CreateTournamentScreenState extends ConsumerState<CreateTournamentScreen>
         id: '',
         hostUid: userProfile.uid,
         hostName: userProfile.name,
-        sport: _selectedSport,
+        sport: selectedSport,
         tournamentName: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         posterUrl: posterUrl,
@@ -189,6 +193,11 @@ class _CreateTournamentScreenState extends ConsumerState<CreateTournamentScreen>
 
   @override
   Widget build(BuildContext context) {
+    final sportsAsync = ref.watch(sportsCatalogProvider);
+    final availableSports = sportsAsync.asData?.value ?? const [];
+    final sportNames = availableSports.isNotEmpty ? availableSports.map((sport) => sport.name).toList() : ['Football'];
+    final selectedSport = sportNames.contains(_selectedSport) ? _selectedSport : sportNames.first;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Host a Tournament'),
@@ -229,12 +238,12 @@ class _CreateTournamentScreenState extends ConsumerState<CreateTournamentScreen>
                   ),
                   const SizedBox(height: 20),
                   DropdownButtonFormField<String>(
-                    value: _selectedSport,
+                    value: selectedSport,
                     decoration: const InputDecoration(
                       labelText: 'Sport',
                       border: OutlineInputBorder(),
                     ),
-                    items: _sports.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    items: sportNames.map((sport) => DropdownMenuItem(value: sport, child: Text(sport))).toList(),
                     onChanged: (val) {
                       setState(() {
                         _selectedSport = val!;

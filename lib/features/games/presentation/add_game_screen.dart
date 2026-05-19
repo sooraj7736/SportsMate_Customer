@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:sportsmate/features/auth/presentation/auth_controller.dart';
 import 'package:sportsmate/features/notifications/data/notifications_repository.dart';
 import 'package:sportsmate/features/notifications/domain/notification_entity.dart';
+import 'package:sportsmate/features/sports/data/sports_catalog.dart';
 import 'add_game_controller.dart';
 import '../domain/game_entity.dart';
 import '../data/games_repository.dart';
@@ -78,6 +79,10 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
     final state = ref.watch(addGameControllerProvider);
     final notifier = ref.read(addGameControllerProvider.notifier);
     final userProfile = ref.watch(userProfileProvider).value;
+    final sportsAsync = ref.watch(sportsCatalogProvider);
+    final availableSports = sportsAsync.asData?.value ?? const [];
+    final sportNames = availableSports.isNotEmpty ? availableSports.map((sport) => sport.name).toList() : ['Football'];
+    final selectedSport = sportNames.contains(state.sportType) ? state.sportType : sportNames.first;
 
     final now = DateTime.now();
     final availableDays = List.generate(14, (index) => now.add(Duration(days: index)));
@@ -131,11 +136,9 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
           // 1. Sport Type & Location
           _buildCardFrame("Match Context", [
             DropdownButtonFormField<String>(
-              value: state.sportType,
+              value: selectedSport,
               decoration: const InputDecoration(labelText: "Select Sport", border: InputBorder.none),
-              items: ["Football", "Cricket", "Basketball", "Badminton"].map((sport) {
-                return DropdownMenuItem(value: sport, child: Text(sport));
-              }).toList(),
+              items: sportNames.map((sport) => DropdownMenuItem(value: sport, child: Text(sport))).toList(),
               onChanged: (val) => notifier.updateSport(val!),
             ),
             const Divider(),
@@ -350,7 +353,7 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
                       id: '', // Left blank; Firestore generates this dynamically
                       hostId: currentUser?.uid ?? 'unknown_id',
                       hostName: userProfile?.name ?? 'Athlete Host',
-                      sportType: state.sportType,
+                      sportType: selectedSport,
                       locationName: finalLocationName,
                       turfId: finalTurfId,
                       isVerifiedTurf: finalIsVerifiedTurf,
@@ -399,7 +402,7 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
                             id: '',
                             targetUserId: athleteUid,
                             title: 'New Game Nearby!',
-                            body: '${userProfile?.name ?? "Someone"} created a ${state.sportType} game near you at $finalLocationName.',
+                            body: '${userProfile?.name ?? "Someone"} created a $selectedSport game near you at $finalLocationName.',
                             date: DateTime.now(),
                           );
                           await ref.read(notificationsRepositoryProvider).sendNotification(notification);

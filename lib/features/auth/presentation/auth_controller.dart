@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/providers/common_providers.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../profile/domain/athlete_entity.dart';
+import '../../sports/data/sports_catalog.dart';
 
 class RegisterState {
   final bool isLoading;
@@ -41,7 +42,27 @@ class RegisterState {
 final userProfileProvider = FutureProvider<Athlete?>((ref) async {
   final user = ref.watch(authStateProvider).value;
   if (user == null) return null;
-  return ref.read(profileRepositoryProvider).getAthleteProfile(user.uid);
+
+  final profile = await ref.read(profileRepositoryProvider).getAthleteProfile(user.uid);
+  if (profile == null) return null;
+
+  final allowedSports = await ref.watch(sportsCatalogProvider.future);
+  final normalizedSports = normalizeSportSelections(profile.favoriteSports, allowedSports);
+
+  if (normalizedSports.length == profile.favoriteSports.length &&
+      normalizedSports.every((sport) => profile.favoriteSports.contains(sport))) {
+    return profile;
+  }
+
+  return Athlete(
+    uid: profile.uid,
+    username: profile.username,
+    name: profile.name,
+    email: profile.email,
+    favoriteSports: normalizedSports,
+    skillLevel: profile.skillLevel,
+    profilePic: profile.profilePic,
+  );
 });
 
 final authControllerProvider = NotifierProvider<AuthController, RegisterState>(() {
@@ -121,6 +142,9 @@ class AuthController extends Notifier<RegisterState> {
         password: password,
       );
 
+      final allowedSports = await ref.read(sportsCatalogProvider.future);
+      final normalizedSports = normalizeSportSelections(selectedSports, allowedSports);
+
       String? profilePicUrl;
       if (profileFile != null) {
         profilePicUrl = await _profileRepository.uploadProfileImage(
@@ -136,7 +160,7 @@ class AuthController extends Notifier<RegisterState> {
         username: username,
         name: name,
         email: email,
-        favoriteSports: selectedSports,
+        favoriteSports: normalizedSports,
         skillLevel: skillLevel,
         profilePic: profilePicUrl,
       );

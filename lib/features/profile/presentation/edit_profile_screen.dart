@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sportsmate/features/auth/presentation/auth_controller.dart';
+import 'package:sportsmate/features/sports/data/sports_catalog.dart';
 import '../domain/athlete_entity.dart';
 import '../data/profile_repository.dart';
 
@@ -26,17 +27,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _isCheckingUsername = false;
 
   final List<String> _skillLevels = ['Beginner', 'Intermediate', 'Advanced', 'Professional'];
-  final List<String> _availableSports = [
-    'Football',
-    'Cricket',
-    'Basketball',
-    'Tennis',
-    'Badminton',
-    'Volleyball',
-    'Table Tennis',
-    'Swimming'
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -139,6 +129,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final primaryColor = theme.primaryColor;
+    final sportsAsync = ref.watch(sportsCatalogProvider);
+    final availableSports = sportsAsync.asData?.value ?? const [];
 
     return Scaffold(
       appBar: AppBar(
@@ -316,40 +308,54 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
                     ),
                     const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _availableSports.map((sport) {
-                        final isSelected = _selectedSports.contains(sport);
-                        return FilterChip(
-                          label: Text(sport),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            setState(() {
-                              if (selected) {
-                                _selectedSports.add(sport);
-                              } else {
-                                _selectedSports.remove(sport);
-                              }
-                            });
-                          },
-                          selectedColor: primaryColor.withOpacity(0.15),
-                          checkmarkColor: primaryColor,
-                          labelStyle: TextStyle(
-                            color: isSelected ? primaryColor : theme.textTheme.bodyLarge?.color,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
-                          backgroundColor:
-                              theme.brightness == Brightness.light ? Colors.grey.shade100 : Colors.grey.shade900,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            side: BorderSide(
-                              color: isSelected ? primaryColor : Colors.transparent,
+                    if (sportsAsync.isLoading && availableSports.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (availableSports.isEmpty)
+                      Text(
+                        'No sports are configured in Firestore yet.',
+                        style: TextStyle(color: theme.textTheme.bodySmall?.color),
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: availableSports.map((sport) {
+                          final isSelected = _selectedSports.contains(sport.name);
+                          return FilterChip(
+                            label: Text(sport.name),
+                            avatar: sport.icon.isNotEmpty ? Text(sport.icon) : null,
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  if (!_selectedSports.contains(sport.name)) {
+                                    _selectedSports.add(sport.name);
+                                  }
+                                } else {
+                                  _selectedSports.remove(sport.name);
+                                }
+                              });
+                            },
+                            selectedColor: primaryColor.withOpacity(0.15),
+                            checkmarkColor: primaryColor,
+                            labelStyle: TextStyle(
+                              color: isSelected ? primaryColor : theme.textTheme.bodyLarge?.color,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                             ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                            backgroundColor:
+                                theme.brightness == Brightness.light ? Colors.grey.shade100 : Colors.grey.shade900,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              side: BorderSide(
+                                color: isSelected ? primaryColor : Colors.transparent,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
                     const SizedBox(height: 40),
 
                     // Save Button

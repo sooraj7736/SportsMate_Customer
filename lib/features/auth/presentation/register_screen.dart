@@ -8,6 +8,7 @@ import '../../../core/widgets/custom_dropdown.dart';
 import '../../../core/widgets/location_picker.dart';
 import 'auth_controller.dart';
 import 'login_screen.dart';
+import '../../sports/data/sports_catalog.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -21,9 +22,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final usernameController = TextEditingController();
-  final sportsController = TextEditingController();
   final addressNameController = TextEditingController();
   final addressTextController = TextEditingController();
+  final List<String> _selectedSports = [];
   
   String selectedSkill = "Beginner";
   final List<String> skillLevels = ["Beginner", "Intermediate", "Pro"];
@@ -40,7 +41,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     emailController.dispose();
     passwordController.dispose();
     usernameController.dispose();
-    sportsController.dispose();
     addressNameController.dispose();
     addressTextController.dispose();
     super.dispose();
@@ -70,15 +70,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return;
     }
 
-    final sportsList = sportsController.text
-        .split(',')
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)
-        .toList();
-
-    if (sportsList.isEmpty) {
+    if (_selectedSports.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter at least one interested game.')),
+        const SnackBar(content: Text('Please select at least one interested game.')),
       );
       return;
     }
@@ -103,7 +97,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         password: passwordController.text,
         name: nameController.text.trim(),
         username: usernameController.text.trim(),
-        selectedSports: sportsList,
+        selectedSports: _selectedSports,
         skillLevel: selectedSkill,
         addressName: addressNameController.text.trim(),
         addressText: addressTextController.text.trim(),
@@ -124,6 +118,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final registerState = ref.watch(authControllerProvider);
+    final sportsAsync = ref.watch(sportsCatalogProvider);
+    final availableSports = sportsAsync.asData?.value ?? const [];
 
     return Scaffold(
       appBar: AppBar(title: const Text("Create Athlete Profile")),
@@ -214,11 +210,49 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               isPassword: true,
             ),
             
-            CustomTextField(
-              controller: sportsController, 
-              label: "Interested Games (comma separated)", 
-              icon: Icons.sports_tennis,
+            const SizedBox(height: 8),
+            Text(
+              "Interested Games",
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).textTheme.bodyLarge?.color),
             ),
+            const SizedBox(height: 8),
+            if (sportsAsync.isLoading && availableSports.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12.0),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (availableSports.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Text(
+                  'No sports are configured in Firestore yet.',
+                  style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
+                ),
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: availableSports.map((sport) {
+                  final isSelected = _selectedSports.contains(sport.name);
+                  return FilterChip(
+                    label: Text(sport.name),
+                    avatar: sport.icon.isNotEmpty ? Text(sport.icon) : null,
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          if (!_selectedSports.contains(sport.name)) {
+                            _selectedSports.add(sport.name);
+                          }
+                        } else {
+                          _selectedSports.remove(sport.name);
+                        }
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
             
             const SizedBox(height: 10),
             CustomTextField(
