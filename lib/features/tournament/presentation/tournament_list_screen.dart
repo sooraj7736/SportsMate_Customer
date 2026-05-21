@@ -8,6 +8,9 @@ import 'package:intl/intl.dart';
 import 'package:sportsmate/features/tournament/live_score/data/football_live_score_repository.dart';
 import 'package:sportsmate/features/tournament/live_score/presentation/view_football/view_football_live_score_screen.dart';
 import 'package:sportsmate/features/tournament/live_score/presentation/add_football/add_football_live_score_screen.dart';
+import 'package:sportsmate/features/tournament/live_score/data/basketball_live_score_repository.dart';
+import 'package:sportsmate/features/tournament/live_score/presentation/view_basketball/view_basketball_live_score_screen.dart';
+import 'package:sportsmate/features/tournament/live_score/presentation/add_basketball/add_basketball_live_score_screen.dart';
 
 class BlinkingDot extends StatefulWidget {
   final double size;

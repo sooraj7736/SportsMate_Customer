@@ -13,6 +13,10 @@ import 'package:sportsmate/features/tournament/live_score/data/cricket_live_scor
 import 'package:sportsmate/features/tournament/live_score/domain/cricket_live_score_entity.dart';
 import 'package:sportsmate/features/tournament/live_score/presentation/add_cricket/add_cricket_live_score_screen.dart';
 import 'package:sportsmate/features/tournament/live_score/presentation/view_cricket/view_cricket_live_score_screen.dart';
+import 'package:sportsmate/features/tournament/live_score/data/basketball_live_score_repository.dart';
+import 'package:sportsmate/features/tournament/live_score/domain/basketball_live_score_entity.dart';
+import 'package:sportsmate/features/tournament/live_score/presentation/add_basketball/add_basketball_live_score_screen.dart';
+import 'package:sportsmate/features/tournament/live_score/presentation/view_basketball/view_basketball_live_score_screen.dart';
 import 'package:sportsmate/features/notifications/data/notifications_repository.dart';
 import 'package:sportsmate/features/notifications/domain/notification_entity.dart';
 
@@ -30,6 +34,7 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
 
   bool get _isFootballTournament => widget.tournament.sport.toLowerCase() == 'football';
   bool get _isCricketTournament => widget.tournament.sport.toLowerCase() == 'cricket';
+  bool get _isBasketballTournament => widget.tournament.sport.toLowerCase() == 'basketball';
 
   bool _isLiveScoreUpdateEnabled(Map<String, dynamic> fixture) {
     final date = fixture['date'] as String? ?? '';
@@ -642,10 +647,13 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
 
     final isCricket = widget.tournament.sport.toLowerCase() == 'cricket';
     final isFootball = widget.tournament.sport.toLowerCase() == 'football';
+    final isBasketball = widget.tournament.sport.toLowerCase() == 'basketball';
 
     final initialParam = isCricket
         ? (targetFixture['overs']?.toString() ?? '20')
-        : (targetFixture['duration']?.toString() ?? '90');
+        : isFootball
+            ? (targetFixture['duration']?.toString() ?? '90')
+            : (targetFixture['quarterDuration']?.toString() ?? '10');
 
     showDialog(
       context: context,
@@ -691,7 +699,7 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     InkWell(
                       onTap: () async {
                         final DateTime? picked = await showDatePicker(
-                          context: context,
+                           context: context,
                           initialDate: selectedDate,
                           firstDate: widget.tournament.startDate,
                           lastDate: widget.tournament.endDate,
@@ -789,6 +797,21 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                           prefixIcon: const Icon(Icons.timer, size: 18),
                         ),
                       ),
+                    ] else if (isBasketball) ...[
+                      const Text(
+                        'Quarter Duration (Minutes)',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
+                      ),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: controller,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: 'Enter quarter duration (e.g., 10)',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          prefixIcon: const Icon(Icons.sports_basketball, size: 18),
+                        ),
+                      ),
                     ],
                   ],
                 ),
@@ -827,6 +850,8 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                           map['overs'] = customVal;
                         } else if (isFootball) {
                           map['duration'] = customVal;
+                        } else if (isBasketball) {
+                          map['quarterDuration'] = customVal;
                         }
                       }
                       return map;
@@ -980,6 +1005,8 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
         scheduleLabel += ' • ' + fixture['overs'].toString() + ' Overs';
       } else if (t.sport.toLowerCase() == 'football' && fixture['duration'] != null) {
         scheduleLabel += ' • ' + fixture['duration'].toString() + ' Mins';
+      } else if (t.sport.toLowerCase() == 'basketball' && fixture['quarterDuration'] != null) {
+        scheduleLabel += ' • 4 Qtrs x ' + fixture['quarterDuration'].toString() + 'M';
       }
     }
 
@@ -987,7 +1014,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
         ? ref.watch(footballLiveScoreStreamProvider(t.id))
         : _isCricketTournament
             ? ref.watch(cricketLiveScoreStreamProvider(t.id))
-            : const AsyncValue.data(null);
+            : _isBasketballTournament
+                ? ref.watch(basketballLiveScoreStreamProvider(t.id))
+                : const AsyncValue.data(null);
 
     return GestureDetector(
       behavior: HitTestBehavior.deferToChild,
@@ -1070,7 +1099,7 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
               ),
             ),
             // Live score snippet on card (compact)
-            if (_isFootballTournament || _isCricketTournament) ...[
+            if (_isFootballTournament || _isCricketTournament || _isBasketballTournament) ...[
               const Divider(height: 1, thickness: 1, color: Colors.black12),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1180,6 +1209,47 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                           ),
                         ],
                       );
+                    } else if (_isBasketballTournament && score is BasketballLiveScoreEntity) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  score.hostTeamName,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                child: Text(
+                                  '${score.hostTeamScore} - ${score.guestTeamScore}',
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  score.guestTeamName,
+                                  textAlign: TextAlign.end,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Text(score.matchStatus, style: TextStyle(fontSize: 11, color: Colors.orange.shade700, fontWeight: FontWeight.w600)),
+                              const Spacer(),
+                              Text(score.currentQuarter == 5 ? 'OT' : 'Q${score.currentQuarter}', style: const TextStyle(fontSize: 11)),
+                            ],
+                          ),
+                        ],
+                      );
                     }
                     return const SizedBox.shrink();
                   },
@@ -1221,7 +1291,7 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
               ),
             ),
             // Bottom Action Button
-            if (_isFootballTournament || _isCricketTournament) ...[
+            if (_isFootballTournament || _isCricketTournament || _isBasketballTournament) ...[
               const Divider(height: 1, thickness: 1, color: Colors.black12),
               if (isHost) ...[
                 // Host sees Update Live Score
@@ -1250,7 +1320,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                       MaterialPageRoute(
                         builder: (_) => _isFootballTournament
                             ? AddFootballLiveScoreScreen(tournament: t)
-                            : AddCricketLiveScoreScreen(tournament: t),
+                            : _isCricketTournament
+                                ? AddCricketLiveScoreScreen(tournament: t)
+                                : AddBasketballLiveScoreScreen(tournament: t),
                       ),
                     );
                   },
@@ -1258,7 +1330,11 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: _isLiveScoreUpdateEnabled(fixture)
-                          ? (_isFootballTournament ? Colors.orange.shade700 : Colors.teal.shade700)
+                          ? (_isFootballTournament
+                              ? Colors.orange.shade700
+                              : _isCricketTournament
+                                  ? Colors.teal.shade700
+                                  : Colors.orange.shade800)
                           : Colors.grey.shade300,
                       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
                     ),
@@ -1283,21 +1359,31 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                       MaterialPageRoute(
                         builder: (_) => _isFootballTournament
                             ? ViewFootballLiveScoreScreen(tournament: t)
-                            : ViewCricketLiveScoreScreen(tournament: t),
+                            : _isCricketTournament
+                                ? ViewCricketLiveScoreScreen(tournament: t)
+                                : ViewBasketballLiveScoreScreen(tournament: t),
                       ),
                     );
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
-                      color: _isFootballTournament ? Colors.orange.shade50 : Colors.teal.shade50,
+                      color: _isFootballTournament
+                          ? Colors.orange.shade50
+                          : _isCricketTournament
+                              ? Colors.teal.shade50
+                              : Colors.orange.shade50,
                       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
                     ),
                     child: Center(
                       child: Text(
                         "View Live Score",
                         style: TextStyle(
-                          color: _isFootballTournament ? Colors.orange.shade800 : Colors.teal.shade800,
+                          color: _isFootballTournament
+                              ? Colors.orange.shade800
+                              : _isCricketTournament
+                                  ? Colors.teal.shade800
+                                  : Colors.orange.shade800,
                           fontSize: 11.5,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1644,6 +1730,236 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
     );
   }
 
+  Widget _buildBasketballLiveScoreCard(BuildContext context, bool isHost, TournamentEntity tournament, AsyncValue<BasketballLiveScoreEntity?> liveScoreAsync) {
+    return liveScoreAsync.when(
+      data: (liveScore) {
+        final score = liveScore;
+        final hasScore = score != null;
+        return Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.orange.shade200),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Basketball Live Score',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: hasScore ? Colors.orange.shade50 : Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        score?.matchStatus ?? 'No score posted',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: hasScore ? Colors.orange.shade800 : Colors.orange.shade800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (score != null) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              score.hostTeamName,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                            if (score.hostTeamFouls >= 5)
+                              Container(
+                                margin: const EdgeInsets.only(top: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade800,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'BONUS',
+                                  style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${score.hostTeamScore} - ${score.guestTeamScore}',
+                        style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              score.guestTeamName,
+                              textAlign: TextAlign.end,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                            if (score.guestTeamFouls >= 5)
+                              Container(
+                                margin: const EdgeInsets.only(top: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade800,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'BONUS',
+                                  style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Quarter: ${score.currentQuarter == 5 ? "OT" : "Q" + score.currentQuarter.toString()}',
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                      ),
+                      if (score.timerAccumulatedSeconds != null) ...[
+                        Builder(
+                          builder: (context) {
+                            final elapsed = score.isTimerRunning && score.timerStartedAt != null
+                                ? (score.timerAccumulatedSeconds) + DateTime.now().difference(score.timerStartedAt!).inSeconds
+                                : (score.timerAccumulatedSeconds);
+                            final min = elapsed ~/ 60;
+                            final sec = elapsed % 60;
+                            final timeStr = '${min.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
+                            return Text(
+                              'Time: $timeStr',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.orange),
+                            );
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (score.foulEvents.isNotEmpty) ...[
+                    Builder(
+                      builder: (context) {
+                        final latestIncidents = score.foulEvents.length > 3
+                            ? score.foulEvents.sublist(score.foulEvents.length - 3)
+                            : score.foulEvents;
+                        return BroadcastTicker(
+                          incidents: latestIncidents,
+                          badgeColor: const Color(0xFFFF6D00),
+                          backgroundColor: const Color(0xFF1E1E1E),
+                          badgeText: 'PLAY',
+                        );
+                      }
+                    ),
+                  ],
+                ] else ...[
+                  Text(
+                    isHost
+                        ? 'No live score has been posted yet. Add the first update for this tournament.'
+                        : 'The host has not posted a live score yet.',
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Builder(
+                        builder: (context) {
+                          final anyEnabled = tournament.fixtures.any((f) => _isLiveScoreUpdateEnabled(f));
+                          final btnBgColor = isHost
+                              ? (anyEnabled ? Colors.orange.shade700 : Colors.grey.shade300)
+                              : Colors.orange.shade50;
+                          final btnFgColor = isHost
+                              ? (anyEnabled ? Colors.white : Colors.grey.shade600)
+                              : Colors.orange.shade800;
+
+                          return ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: btnBgColor,
+                              foregroundColor: btnFgColor,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                side: BorderSide(
+                                  color: isHost
+                                      ? (anyEnabled ? Colors.orange.shade900 : Colors.grey.shade400)
+                                      : Colors.orange.shade200,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            onPressed: () {
+                              if (isHost) {
+                                if (!anyEnabled) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: const Text(
+                                        "No matches are currently scheduled to start within 1 hour. Please schedule or reschedule a match first.",
+                                      ),
+                                      backgroundColor: Colors.red.shade800,
+                                    ),
+                                  );
+                                  return;
+                                }
+                              }
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => isHost
+                                      ? AddBasketballLiveScoreScreen(tournament: tournament)
+                                      : ViewBasketballLiveScoreScreen(tournament: tournament),
+                                ),
+                              );
+                            },
+                            icon: Icon(isHost ? Icons.edit : Icons.visibility),
+                            label: Text(
+                              isHost ? 'Update Live Score' : 'View Live Score',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 12.0),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, stack) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0),
+        child: Text('Failed to load live score: $err'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = widget.tournament;
@@ -1651,6 +1967,7 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
     final isHost = userProfile?.uid == t.hostUid;
     final liveScoreAsync = _isFootballTournament ? ref.watch(footballLiveScoreStreamProvider(t.id)) : null;
     final cricketLiveScoreAsync = _isCricketTournament ? ref.watch(cricketLiveScoreStreamProvider(t.id)) : null;
+    final basketballLiveScoreAsync = _isBasketballTournament ? ref.watch(basketballLiveScoreStreamProvider(t.id)) : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -1702,6 +2019,10 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
             if (_isCricketTournament && cricketLiveScoreAsync != null) ...[
               const SizedBox(height: 8),
               _buildCricketLiveScoreCard(context, isHost, t, cricketLiveScoreAsync),
+            ],
+            if (_isBasketballTournament && basketballLiveScoreAsync != null) ...[
+              const SizedBox(height: 8),
+              _buildBasketballLiveScoreCard(context, isHost, t, basketballLiveScoreAsync),
             ],
             const SizedBox(height: 16),
 
@@ -1838,7 +2159,7 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (_isFootballTournament || _isCricketTournament) ...[
+              if (_isFootballTournament || _isCricketTournament || _isBasketballTournament) ...[
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -1863,17 +2184,25 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                           builder: (_) => isHost
                               ? (_isFootballTournament
                                   ? AddFootballLiveScoreScreen(tournament: t)
-                                  : AddCricketLiveScoreScreen(tournament: t))
+                                  : _isCricketTournament
+                                      ? AddCricketLiveScoreScreen(tournament: t)
+                                      : AddBasketballLiveScoreScreen(tournament: t))
                               : (_isFootballTournament
                                   ? ViewFootballLiveScoreScreen(tournament: t)
-                                  : ViewCricketLiveScoreScreen(tournament: t)),
+                                  : _isCricketTournament
+                                      ? ViewCricketLiveScoreScreen(tournament: t)
+                                      : ViewBasketballLiveScoreScreen(tournament: t)),
                         ),
                       );
                     },
                     icon: Icon(isHost ? Icons.edit : Icons.visibility),
                     label: Text(isHost ? 'Update Live Score' : 'View Live Score'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _isFootballTournament ? Colors.orange.shade700 : Colors.teal.shade700,
+                      backgroundColor: _isFootballTournament
+                          ? Colors.orange.shade700
+                          : _isCricketTournament
+                              ? Colors.teal.shade700
+                              : Colors.orange.shade800,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
