@@ -21,6 +21,7 @@ class _CreateTournamentScreenState extends ConsumerState<CreateTournamentScreen>
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _maxTeamsController = TextEditingController();
+  final TextEditingController _minPlayersController = TextEditingController(text: '5');
   final TextEditingController _ageRestrictionController = TextEditingController();
   final TextEditingController _feeController = TextEditingController();
   final TextEditingController _prizePoolController = TextEditingController();
@@ -170,6 +171,7 @@ class _CreateTournamentScreenState extends ConsumerState<CreateTournamentScreen>
         contactPhone: _contactPhoneController.text.trim(),
         isBoosted: _isBoosted,
         status: 'Open',
+        minPlayersPerTeam: int.tryParse(_minPlayersController.text.trim()) ?? 5,
       );
 
       await ref.read(tournamentRepositoryProvider).addTournament(tournament);
@@ -270,16 +272,36 @@ class _CreateTournamentScreenState extends ConsumerState<CreateTournamentScreen>
                         child: TextFormField(
                           controller: _maxTeamsController,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'Max Teams', border: OutlineInputBorder()),
-                          validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+                          decoration: const InputDecoration(
+                            labelText: 'Max Teams',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.format_list_numbered),
+                          ),
+                          validator: (val) {
+                            if (val == null || val.isEmpty) return 'Required';
+                            final parsed = int.tryParse(val);
+                            if (parsed == null || parsed <= 0) return 'Must be > 0';
+                            return null;
+                          },
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: TextFormField(
-                          controller: _feeController,
+                          controller: _minPlayersController,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'Entry Fee (Optional)', border: OutlineInputBorder()),
+                          decoration: const InputDecoration(
+                            labelText: 'Min Players / Team',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.groups_outlined),
+                          ),
+                          validator: (val) {
+                            if (val == null || val.isEmpty) return 'Required';
+                            final parsed = int.tryParse(val);
+                            if (parsed == null || parsed <= 0) return 'Must be > 0';
+                            if (parsed > 15) return 'Max is 15';
+                            return null;
+                          },
                         ),
                       ),
                     ],
@@ -289,8 +311,24 @@ class _CreateTournamentScreenState extends ConsumerState<CreateTournamentScreen>
                     children: [
                       Expanded(
                         child: TextFormField(
+                          controller: _feeController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Entry Fee (Optional)',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.attach_money),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
                           controller: _ageRestrictionController,
-                          decoration: const InputDecoration(labelText: 'Age Restriction (e.g. Under 19)', border: OutlineInputBorder()),
+                          decoration: const InputDecoration(
+                            labelText: 'Age Restriction',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.calendar_month_outlined),
+                          ),
                         ),
                       ),
                     ],

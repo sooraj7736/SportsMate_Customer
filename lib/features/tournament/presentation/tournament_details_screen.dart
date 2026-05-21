@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sportsmate/features/tournament/domain/tournament_entity.dart';
@@ -8,6 +9,12 @@ import 'package:sportsmate/features/tournament/live_score/data/football_live_sco
 import 'package:sportsmate/features/tournament/live_score/domain/football_live_score_entity.dart';
 import 'package:sportsmate/features/tournament/live_score/presentation/add_football/add_football_live_score_screen.dart';
 import 'package:sportsmate/features/tournament/live_score/presentation/view_football/view_football_live_score_screen.dart';
+import 'package:sportsmate/features/tournament/live_score/data/cricket_live_score_repository.dart';
+import 'package:sportsmate/features/tournament/live_score/domain/cricket_live_score_entity.dart';
+import 'package:sportsmate/features/tournament/live_score/presentation/add_cricket/add_cricket_live_score_screen.dart';
+import 'package:sportsmate/features/tournament/live_score/presentation/view_cricket/view_cricket_live_score_screen.dart';
+import 'package:sportsmate/features/notifications/data/notifications_repository.dart';
+import 'package:sportsmate/features/notifications/domain/notification_entity.dart';
 
 class TournamentDetailsScreen extends ConsumerStatefulWidget {
   final TournamentEntity tournament;
@@ -22,6 +29,60 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
   bool _isGeneratingFixtures = false;
 
   bool get _isFootballTournament => widget.tournament.sport.toLowerCase() == 'football';
+  bool get _isCricketTournament => widget.tournament.sport.toLowerCase() == 'cricket';
+
+  bool _isLiveScoreUpdateEnabled(Map<String, dynamic> fixture) {
+    final date = fixture['date'] as String? ?? '';
+    final time = fixture['time'] as String? ?? '';
+    if (date.isEmpty || time.isEmpty) return false;
+    try {
+      final scheduledTime = DateTime.parse('$date $time');
+      final now = DateTime.now();
+      return now.isAfter(scheduledTime.subtract(const Duration(hours: 1)));
+    } catch (_) {
+      return false;
+    }
+  }
+
+  String _formatFootballIncident(String eventText) {
+    final parts = eventText.split(' • ').map((e) => e.trim()).toList();
+    if (parts.isEmpty) return eventText;
+
+    String minutePrefix = '';
+    int offset = 0;
+    if (parts.isNotEmpty && parts[0].endsWith("'")) {
+      minutePrefix = parts[0] + ' ';
+      offset = 1;
+    }
+
+    final type = parts.length > offset ? parts[offset] : '';
+    final team = parts.length > offset + 1 ? parts[offset + 1] : '';
+    final player = parts.length > offset + 2 ? parts[offset + 2] : '';
+    final note = parts.length > offset + 3 ? parts[offset + 3] : '';
+
+    final displayTeam = team.isNotEmpty ? ' ($team)' : '';
+    final displayPlayer = player.isNotEmpty ? player : 'A player';
+    final displayNote = note.isNotEmpty ? ' ($note)' : '';
+
+    switch (type.toLowerCase()) {
+      case 'goal':
+        return minutePrefix + '⚽ GOAL!!! Spectacular play by $displayPlayer$displayTeam!$displayNote';
+      case 'yellow card':
+        return minutePrefix + '🟨 YELLOW CARD! $displayPlayer$displayTeam booked$displayNote.';
+      case 'red card':
+        return minutePrefix + '🟥 RED CARD! $displayPlayer$displayTeam sent off$displayNote!';
+      case 'foul':
+        return minutePrefix + '🚨 FOUL! Infraction by $displayPlayer$displayTeam$displayNote.';
+      case 'penalty':
+        return minutePrefix + '🥅 PENALTY! Spot kick awarded to $displayTeam. $displayPlayer steps up!';
+      case 'offside':
+        return minutePrefix + '🚩 OFFSIDE! Flag up against $displayPlayer$displayTeam.';
+      case 'corner':
+        return minutePrefix + '📐 CORNER KICK! $displayTeam takes a set-piece opportunity.';
+      default:
+        return minutePrefix + '📢 $type: $displayPlayer$displayTeam$displayNote';
+    }
+  }
 
   void _generateFixtures() async {
     final t = widget.tournament;
@@ -183,66 +244,287 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
 
   void _showJoinDialog() {
     final teamNameController = TextEditingController();
-    final playersController = TextEditingController();
+    final List<TextEditingController> memberControllers = [];
+
+    // Prefill user profile
+    final userProfile = ref.read(userProfileProvider).value;
+    if (userProfile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please log in to register a team.")),
+      );
+      return;
+    }
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) {
-        return AlertDialog(
-          title: const Text("Join Tournament"),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: teamNameController,
-                  decoration: const InputDecoration(labelText: "Team Name", border: OutlineInputBorder()),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                children: [
+                  Icon(Icons.sports_soccer, color: Colors.blue.shade700),
+                  const SizedBox(width: 8),
+                  const Text("Register Team"),
+                ],
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        "Fill in the details to register your team. You are automatically set as the Captain.",
+                        style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: teamNameController,
+                        decoration: const InputDecoration(
+                          labelText: "Team Name",
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.shield_outlined),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Captain field (Read-only)
+                      TextFormField(
+                        initialValue: "${userProfile.name} (Captain)",
+                        enabled: false,
+                        decoration: InputDecoration(
+                          labelText: "Team Captain",
+                          border: const OutlineInputBorder(),
+                          filled: true,
+                          fillColor: Colors.grey.shade100,
+                          prefixIcon: const Icon(Icons.star, color: Colors.amber),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Teammates (${1 + memberControllers.length})",
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                          Text(
+                            "Min: ${widget.tournament.minPlayersPerTeam} • Max: 15",
+                            style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 12),
+                      // List of dynamic teammates
+                      if (memberControllers.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Text(
+                            "No teammates added yet. Tap the button below to add your squad.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontStyle: FontStyle.italic),
+                          ),
+                        ),
+                      ...memberControllers.asMap().entries.map((entry) {
+                        final idx = entry.key;
+                        final controller = entry.value;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: controller,
+                                  decoration: InputDecoration(
+                                    labelText: "Teammate #${idx + 1} Name",
+                                    border: const OutlineInputBorder(),
+                                    prefixIcon: const Icon(Icons.person_outline),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                onPressed: () {
+                                  setDialogState(() {
+                                    memberControllers.removeAt(idx);
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          if (1 + memberControllers.length >= 15) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Maximum capacity of 15 reached.")),
+                            );
+                            return;
+                          }
+                          setDialogState(() {
+                            memberControllers.add(TextEditingController());
+                          });
+                        },
+                        icon: const Icon(Icons.add),
+                        label: const Text("Add Team Member"),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: playersController,
-                  maxLines: 4,
-                  decoration: const InputDecoration(labelText: "Player Names (Comma separated)", border: OutlineInputBorder()),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    for (var c in memberControllers) {
+                      c.dispose();
+                    }
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Cancel"),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final teamName = teamNameController.text.trim();
+                    if (teamName.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Please enter a team name.")),
+                      );
+                      return;
+                    }
+
+                    // Validate blank teammate names
+                    for (int i = 0; i < memberControllers.length; i++) {
+                      if (memberControllers[i].text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Teammate #${i + 1} name cannot be empty.")),
+                        );
+                        return;
+                      }
+                    }
+
+                    final newPlayerNames = memberControllers.map((c) => c.text.trim()).toList();
+                    final allNewPlayers = [userProfile.name, ...newPlayerNames];
+
+                    // Capacity validation
+                    final totalPlayers = allNewPlayers.length;
+                    if (totalPlayers < widget.tournament.minPlayersPerTeam) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("Your team needs at least ${widget.tournament.minPlayersPerTeam} players to register. Currently has $totalPlayers."),
+                          backgroundColor: Colors.red.shade800,
+                        ),
+                      );
+                      return;
+                    }
+
+                    if (totalPlayers > 15) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text("Maximum squad size is 15 players."),
+                          backgroundColor: Colors.red.shade800,
+                        ),
+                      );
+                      return;
+                    }
+
+                    // Duplication Guard 1: Captain UID Check
+                    final existingCaptains = widget.tournament.registeredTeams.map((t) => t['captainUid'] as String?).toList();
+                    if (existingCaptains.contains(userProfile.uid)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text("You have already registered a team in this tournament!"),
+                          backgroundColor: Colors.red.shade800,
+                        ),
+                      );
+                      return;
+                    }
+
+                    // Duplication Guard 2: Case-insensitive Name Check against other teams
+                    final Set<String> registeredNames = {};
+                    for (final team in widget.tournament.registeredTeams) {
+                      final String captName = team['captainName'] as String? ?? '';
+                      if (captName.isNotEmpty) {
+                        registeredNames.add(captName.toLowerCase());
+                      }
+                      final playersList = (team['players'] as List<dynamic>?) ?? [];
+                      for (final p in playersList) {
+                        if (p != null) {
+                          registeredNames.add(p.toString().toLowerCase());
+                        }
+                      }
+                    }
+
+                    for (final name in allNewPlayers) {
+                      if (registeredNames.contains(name.toLowerCase())) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("Player '$name' is already registered in another team in this tournament!"),
+                            backgroundColor: Colors.red.shade800,
+                          ),
+                        );
+                        return;
+                      }
+                    }
+
+                    // Duplication Guard 3: Internal Name Check
+                    final uniqueNewPlayers = allNewPlayers.map((n) => n.toLowerCase()).toSet();
+                    if (uniqueNewPlayers.length < allNewPlayers.length) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text("Duplicate player names detected in your team list!"),
+                          backgroundColor: Colors.red.shade800,
+                        ),
+                      );
+                      return;
+                    }
+
+                    // Limit registration count
+                    if (widget.tournament.registeredTeams.length >= widget.tournament.maxTeams) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Tournament is already full! No more teams can join.")),
+                      );
+                      Navigator.pop(context);
+                      return;
+                    }
+
+                    final teamData = {
+                      'teamName': teamName,
+                      'captainUid': userProfile.uid,
+                      'captainName': userProfile.name,
+                      'players': newPlayerNames, // Keep teammates in players array
+                    };
+
+                    try {
+                      await ref.read(tournamentRepositoryProvider).joinTournament(widget.tournament.id, teamData);
+                      for (var c in memberControllers) {
+                        c.dispose();
+                      }
+                      if (mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Successfully joined tournament!")));
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error joining: $e")));
+                      }
+                    }
+                  },
+                  child: const Text("Join"),
                 ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (teamNameController.text.trim().isEmpty) return;
-
-                final userProfile = ref.read(userProfileProvider).value;
-                if (userProfile == null) return;
-
-                final players = playersController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-
-                final teamData = {
-                  'teamName': teamNameController.text.trim(),
-                  'captainUid': userProfile.uid,
-                  'captainName': userProfile.name,
-                  'players': players,
-                };
-
-                try {
-                  await ref.read(tournamentRepositoryProvider).joinTournament(widget.tournament.id, teamData);
-                  if (mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Successfully joined tournament!")));
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error joining: $e")));
-                  }
-                }
-              },
-              child: const Text("Join"),
-            ),
-          ],
+            );
+          },
         );
       },
     );
@@ -339,45 +621,298 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
   }
 
   void _editMatchSchedule(Map<String, dynamic> targetFixture) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: widget.tournament.startDate.isAfter(DateTime.now()) ? widget.tournament.startDate : DateTime.now(),
-      firstDate: widget.tournament.startDate,
-      lastDate: widget.tournament.endDate,
-    );
-    if (pickedDate == null) return;
-    if (!mounted) return;
-
-    final TimeOfDay? pickedTime = await showTimePicker(
-      context: context,
-      initialTime: const TimeOfDay(hour: 15, minute: 0),
-    );
-    if (pickedTime == null) return;
-    if (!mounted) return;
-
-    final formattedDate = DateFormat('yyyy-MM-dd').format(pickedDate);
-    final formattedTime = '${pickedTime.hour.toString().padLeft(2, '0')}:${pickedTime.minute.toString().padLeft(2, '0')}';
-
-    final List<Map<String, dynamic>> updatedFixtures = widget.tournament.fixtures.map((f) {
-      final map = Map<String, dynamic>.from(f);
-      if (map['matchNumber'] == targetFixture['matchNumber']) {
-        map['date'] = formattedDate;
-        map['time'] = formattedTime;
-      }
-      return map;
-    }).toList();
-
-    try {
-      await ref.read(tournamentRepositoryProvider).updateTournamentFixtures(widget.tournament.id, updatedFixtures);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Match schedule updated successfully!")));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error updating match schedule: $e")));
-      }
+    DateTime? initialDate;
+    if (targetFixture['date'] != null && targetFixture['date'].toString().isNotEmpty) {
+      try {
+        initialDate = DateTime.parse(targetFixture['date'].toString());
+      } catch (_) {}
     }
-  }
+    initialDate ??= (widget.tournament.startDate.isAfter(DateTime.now()) ? widget.tournament.startDate : DateTime.now());
+
+    TimeOfDay? initialTime;
+    if (targetFixture['time'] != null && targetFixture['time'].toString().isNotEmpty) {
+      try {
+        final parts = targetFixture['time'].toString().split(':');
+        if (parts.length >= 2) {
+          initialTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+        }
+      } catch (_) {}
+    }
+    initialTime ??= const TimeOfDay(hour: 15, minute: 0);
+
+    final isCricket = widget.tournament.sport.toLowerCase() == 'cricket';
+    final isFootball = widget.tournament.sport.toLowerCase() == 'football';
+
+    final initialParam = isCricket
+        ? (targetFixture['overs']?.toString() ?? '20')
+        : (targetFixture['duration']?.toString() ?? '90');
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        DateTime selectedDate = initialDate!;
+        TimeOfDay selectedTime = initialTime!;
+        final controller = TextEditingController(text: initialParam);
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final formattedDateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+            final formattedTimeStr = '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}';
+            final formattedDisplayDate = DateFormat('MMM dd, yyyy').format(selectedDate);
+            final formattedDisplayTime = selectedTime.format(context);
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: [
+                  const Icon(Icons.calendar_month, color: Color(0xFF1DB954)),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Schedule Match',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${targetFixture['team1']} vs ${targetFixture['team2']}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black54),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Match Date',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 6),
+                    InkWell(
+                      onTap: () async {
+                        final DateTime? picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: widget.tournament.startDate,
+                          lastDate: widget.tournament.endDate,
+                        );
+                        if (picked != null) {
+                          setDialogState(() {
+                            selectedDate = picked;
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.black26),
+                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.grey.shade50,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              formattedDisplayDate,
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                            ),
+                            const Icon(Icons.edit_calendar, color: Colors.black54, size: 18),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Match Time',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 6),
+                    InkWell(
+                      onTap: () async {
+                        final TimeOfDay? picked = await showTimePicker(
+                          context: context,
+                          initialTime: selectedTime,
+                        );
+                        if (picked != null) {
+                          setDialogState(() {
+                            selectedTime = picked;
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.black26),
+                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.grey.shade50,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              formattedDisplayTime,
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                            ),
+                            const Icon(Icons.access_time, color: Colors.black54, size: 18),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (isCricket) ...[
+                      const Text(
+                        'Number of Overs',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
+                      ),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: controller,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: 'Enter overs (e.g., 20)',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          prefixIcon: const Icon(Icons.sports_cricket, size: 18),
+                        ),
+                      ),
+                    ] else if (isFootball) ...[
+                      const Text(
+                        'Match Duration (Minutes)',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
+                      ),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: controller,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: 'Enter duration (e.g., 90)',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          prefixIcon: const Icon(Icons.timer, size: 18),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final customValStr = controller.text.trim();
+                    if (customValStr.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please enter a value')),
+                      );
+                      return;
+                    }
+                    final customVal = int.tryParse(customValStr);
+                    if (customVal == null || customVal <= 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please enter a valid positive number')),
+                      );
+                      return;
+                    }
+
+                    final formattedDate = formattedDateStr;
+                    final formattedTime = formattedTimeStr;
+
+                    final List<Map<String, dynamic>> updatedFixtures = widget.tournament.fixtures.map((f) {
+                      final map = Map<String, dynamic>.from(f);
+                      if (map['matchNumber'] == targetFixture['matchNumber']) {
+                        map['date'] = formattedDate;
+                        map['time'] = formattedTime;
+                        if (isCricket) {
+                          map['overs'] = customVal;
+                        } else if (isFootball) {
+                          map['duration'] = customVal;
+                        }
+                      }
+                      return map;
+                    }).toList();
+
+                    final String team1Name = targetFixture['team1'] as String? ?? '';
+                    final String team2Name = targetFixture['team2'] as String? ?? '';
+
+                    String? team1CaptainUid;
+                    String? team2CaptainUid;
+
+                    for (final team in widget.tournament.registeredTeams) {
+                      final String name = team['teamName'] as String? ?? '';
+                      if (name == team1Name) {
+                        team1CaptainUid = team['captainUid'] as String?;
+                      }
+                      if (name == team2Name) {
+                        team2CaptainUid = team['captainUid'] as String?;
+                      }
+                    }
+
+                    Navigator.pop(dialogContext);
+
+                    try {
+                      await ref.read(tournamentRepositoryProvider).updateTournamentFixtures(
+                            widget.tournament.id,
+                            updatedFixtures,
+                          );
+
+                      final notificationsRepo = ref.read(notificationsRepositoryProvider);
+                      final displayDateFormatted = DateFormat('MMM dd, yyyy').format(selectedDate);
+
+                      if (team1CaptainUid != null && team1CaptainUid.isNotEmpty) {
+                        await notificationsRepo.sendNotification(
+                          NotificationEntity(
+                            id: '',
+                            targetUserId: team1CaptainUid,
+                            title: 'Match Scheduled: $team1Name vs $team2Name',
+                            body:
+                                'Your match has been scheduled on $displayDateFormatted at $formattedTime in the tournament ${widget.tournament.tournamentName}.',
+                            date: DateTime.now(),
+                          ),
+                        );
+                      }
+                      if (team2CaptainUid != null &&
+                          team2CaptainUid.isNotEmpty &&
+                          team2CaptainUid != team1CaptainUid) {
+                        await notificationsRepo.sendNotification(
+                          NotificationEntity(
+                            id: '',
+                            targetUserId: team2CaptainUid,
+                            title: 'Match Scheduled: $team1Name vs $team2Name',
+                            body:
+                                'Your match has been scheduled on $displayDateFormatted at $formattedTime in the tournament ${widget.tournament.tournamentName}.',
+                            date: DateTime.now(),
+                          ),
+                        );
+                      }
+
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Match schedule updated successfully!')),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error updating match schedule: $e')),
+                        );
+                      }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1DB954),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+}
 
   Widget _buildConnector({
     required int rIndex,
@@ -441,9 +976,18 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
       } catch (_) {
         scheduleLabel = '$dateStr $timeStr';
       }
+      if (t.sport.toLowerCase() == 'cricket' && fixture['overs'] != null) {
+        scheduleLabel += ' • ' + fixture['overs'].toString() + ' Overs';
+      } else if (t.sport.toLowerCase() == 'football' && fixture['duration'] != null) {
+        scheduleLabel += ' • ' + fixture['duration'].toString() + ' Mins';
+      }
     }
 
-    final liveScoreAsync = _isFootballTournament ? ref.watch(footballLiveScoreStreamProvider(t.id)) : const AsyncValue.data(null);
+    final liveScoreAsync = _isFootballTournament
+        ? ref.watch(footballLiveScoreStreamProvider(t.id))
+        : _isCricketTournament
+            ? ref.watch(cricketLiveScoreStreamProvider(t.id))
+            : const AsyncValue.data(null);
 
     return GestureDetector(
       behavior: HitTestBehavior.deferToChild,
@@ -487,53 +1031,18 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                       color: hasSchedule ? Colors.green.shade800 : Colors.blue.shade800,
                     ),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_isFootballTournament) ...[
-                        IconButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => ViewFootballLiveScoreScreen(tournament: t)),
-                            );
-                          },
-                          icon: const Icon(Icons.visibility, size: 16),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                          tooltip: 'View live score',
-                        ),
-                        if (isHost)
-                          IconButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => AddFootballLiveScoreScreen(tournament: t)),
-                              );
-                            },
-                            icon: const Icon(Icons.edit, size: 16),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                            tooltip: 'Update live score',
-                          ),
-                      ],
-                      if (isHost)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 6.0),
-                          child: Icon(
-                            Icons.calendar_today,
-                            size: 12,
-                            color: hasSchedule ? Colors.green : Colors.blue,
-                          ),
-                        ),
-                    ],
-                  ),
+                  if (isHost)
+                    Icon(
+                      Icons.calendar_today,
+                      size: 12,
+                      color: hasSchedule ? Colors.green.shade600 : Colors.blue.shade400,
+                    ),
                 ],
               ),
             ),
             // Team 1
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Text(
                 fixture['team1'] ?? 'TBD',
                 maxLines: 1,
@@ -548,7 +1057,7 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
             const Divider(height: 1, thickness: 1, color: Colors.black12),
             // Team 2
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Text(
                 fixture['team2'] ?? 'TBD',
                 maxLines: 1,
@@ -561,96 +1070,118 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
               ),
             ),
             // Live score snippet on card (compact)
-            if (_isFootballTournament) ...[
+            if (_isFootballTournament || _isCricketTournament) ...[
               const Divider(height: 1, thickness: 1, color: Colors.black12),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: liveScoreAsync.when(
                   data: (score) {
                     if (score == null) {
-                      return Row(
-                        children: [
-                          Expanded(child: Text(isHost ? 'No live score yet. You can add one.' : 'No live score posted.')),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => ViewFootballLiveScoreScreen(tournament: t)),
-                              );
-                            },
-                            icon: const Icon(Icons.visibility, size: 16),
-                            label: const Text('View', style: TextStyle(fontSize: 12)),
-                            style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10)),
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: Text(
+                          isHost ? 'No score yet.' : 'No live score posted.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade600,
+                            fontStyle: FontStyle.italic,
                           ),
-                          if (isHost) ...[
-                            const SizedBox(width: 6),
-                            OutlinedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => AddFootballLiveScoreScreen(tournament: t)),
-                                );
-                              },
-                              icon: const Icon(Icons.edit, size: 16),
-                              label: const Text('Update', style: TextStyle(fontSize: 12)),
-                              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10)),
-                            ),
-                          ]
-                        ],
+                        ),
                       );
                     }
 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(child: Text(score.hostTeamName, style: const TextStyle(fontWeight: FontWeight.w600))),
-                            Text('${score.hostTeamScore} - ${score.guestTeamScore}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            Expanded(child: Text(score.guestTeamName, textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.w600))),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Text(score.matchStatus, style: const TextStyle(fontSize: 12)),
-                            const Spacer(),
-                            if (score.minute != null) Text('Min ${score.minute}', style: const TextStyle(fontSize: 12)),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => ViewFootballLiveScoreScreen(tournament: t)),
-                                );
-                              },
-                              icon: const Icon(Icons.visibility, size: 16),
-                              label: const Text('View', style: TextStyle(fontSize: 12)),
-                              style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10)),
-                            ),
-                            const SizedBox(width: 8),
-                            if (isHost)
-                              OutlinedButton.icon(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (_) => AddFootballLiveScoreScreen(tournament: t)),
-                                  );
-                                },
-                                icon: const Icon(Icons.edit, size: 16),
-                                label: const Text('Update', style: TextStyle(fontSize: 12)),
-                                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10)),
+                    if (_isFootballTournament && score is FootballLiveScoreEntity) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  score.hostTeamName,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                                ),
                               ),
-                          ],
-                        ),
-                      ],
-                    );
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                child: Text(
+                                  '${score.hostTeamScore} - ${score.guestTeamScore}',
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  score.guestTeamName,
+                                  textAlign: TextAlign.end,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Text(score.matchStatus, style: TextStyle(fontSize: 11, color: Colors.green.shade700, fontWeight: FontWeight.w600)),
+                              const Spacer(),
+                              if (score.minute != null) Text('Min ${score.minute}', style: const TextStyle(fontSize: 11)),
+                            ],
+                          ),
+                        ],
+                      );
+                    } else if (_isCricketTournament && score is CricketLiveScoreEntity) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  score.battingTeamName,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                child: Text(
+                                  '${score.runs}/${score.wickets}',
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  '(${score.overs}.${score.balls})',
+                                  textAlign: TextAlign.end,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Text(score.matchStatus, style: TextStyle(fontSize: 11, color: Colors.teal.shade700, fontWeight: FontWeight.w600)),
+                              const Spacer(),
+                              Expanded(
+                                child: Text(
+                                  'vs ${score.bowlingTeamName}',
+                                  textAlign: TextAlign.end,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(fontSize: 10.5, color: Colors.grey.shade700),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    }
+                    return const SizedBox.shrink();
                   },
                   loading: () => const SizedBox(height: 36, child: Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))),
                   error: (err, st) => Text('Live score unavailable', style: TextStyle(color: Colors.red.shade600)),
@@ -662,7 +1193,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: hasSchedule ? Colors.green.shade50.withValues(alpha: 0.5) : Colors.grey.shade50,
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
+                borderRadius: (_isFootballTournament || _isCricketTournament)
+                    ? null
+                    : const BorderRadius.vertical(bottom: Radius.circular(10)),
               ),
               child: Row(
                 children: [
@@ -687,6 +1220,93 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                 ],
               ),
             ),
+            // Bottom Action Button
+            if (_isFootballTournament || _isCricketTournament) ...[
+              const Divider(height: 1, thickness: 1, color: Colors.black12),
+              if (isHost) ...[
+                // Host sees Update Live Score
+                InkWell(
+                  onTap: () {
+                    if (!_isLiveScoreUpdateEnabled(fixture)) {
+                      final dateStr = fixture['date'] as String? ?? '';
+                      final timeStr = fixture['time'] as String? ?? '';
+                      final scheduleLabel = (dateStr.isNotEmpty && timeStr.isNotEmpty)
+                          ? '$dateStr $timeStr'
+                          : 'Not Scheduled';
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            dateStr.isEmpty || timeStr.isEmpty
+                                ? "This match has not been scheduled yet. Please schedule it first to enable live score updates."
+                                : "Live score updates are only enabled starting 1 hour before the scheduled time ($scheduleLabel).",
+                          ),
+                          backgroundColor: Colors.red.shade800,
+                        ),
+                      );
+                      return;
+                    }
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => _isFootballTournament
+                            ? AddFootballLiveScoreScreen(tournament: t)
+                            : AddCricketLiveScoreScreen(tournament: t),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _isLiveScoreUpdateEnabled(fixture)
+                          ? (_isFootballTournament ? Colors.orange.shade700 : Colors.teal.shade700)
+                          : Colors.grey.shade300,
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
+                    ),
+                    child: Center(
+                      child: Text(
+                        "Update Live Score",
+                        style: TextStyle(
+                          color: _isLiveScoreUpdateEnabled(fixture) ? Colors.white : Colors.grey.shade600,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                // Non-host sees View Live Score
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => _isFootballTournament
+                            ? ViewFootballLiveScoreScreen(tournament: t)
+                            : ViewCricketLiveScoreScreen(tournament: t),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _isFootballTournament ? Colors.orange.shade50 : Colors.teal.shade50,
+                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
+                    ),
+                    child: Center(
+                      child: Text(
+                        "View Live Score",
+                        style: TextStyle(
+                          color: _isFootballTournament ? Colors.orange.shade800 : Colors.teal.shade800,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ],
         ),
       ),
@@ -749,6 +1369,23 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     const SizedBox(height: 8),
                     Text('Minute: ${score.minute}'),
                   ],
+                  if (score.foulEvents.isNotEmpty) ...[
+                    Builder(
+                      builder: (context) {
+                        final rawFoulEvents = score.foulEvents;
+                        final formattedIncidents = rawFoulEvents.map((e) => _formatFootballIncident(e)).toList();
+                        final latestIncidents = formattedIncidents.length > 3
+                            ? formattedIncidents.sublist(formattedIncidents.length - 3)
+                            : formattedIncidents;
+                        return BroadcastTicker(
+                          incidents: latestIncidents,
+                          badgeColor: const Color(0xFFD84315),
+                          backgroundColor: const Color(0xFF1A1A1A),
+                          badgeText: 'EVENT',
+                        );
+                      }
+                    ),
+                  ],
                 ] else ...[
                   Text(
                     isHost
@@ -760,19 +1397,233 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                 Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => isHost
-                                  ? AddFootballLiveScoreScreen(tournament: tournament)
-                                  : ViewFootballLiveScoreScreen(tournament: tournament),
+                      child: Builder(
+                        builder: (context) {
+                          final anyEnabled = tournament.fixtures.any((f) => _isLiveScoreUpdateEnabled(f));
+                          final btnBgColor = isHost
+                              ? (anyEnabled ? Colors.orange.shade700 : Colors.grey.shade300)
+                              : Colors.orange.shade50;
+                          final btnFgColor = isHost
+                              ? (anyEnabled ? Colors.white : Colors.grey.shade600)
+                              : Colors.orange.shade800;
+
+                          return ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: btnBgColor,
+                              foregroundColor: btnFgColor,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                side: BorderSide(
+                                  color: isHost
+                                      ? (anyEnabled ? Colors.orange.shade800 : Colors.grey.shade400)
+                                      : Colors.orange.shade200,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            onPressed: () {
+                              if (isHost) {
+                                if (!anyEnabled) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: const Text(
+                                        "No matches are currently scheduled to start within 1 hour. Please schedule or reschedule a match first.",
+                                      ),
+                                      backgroundColor: Colors.red.shade800,
+                                    ),
+                                  );
+                                  return;
+                                }
+                              }
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => isHost
+                                      ? AddFootballLiveScoreScreen(tournament: tournament)
+                                      : ViewFootballLiveScoreScreen(tournament: tournament),
+                                ),
+                              );
+                            },
+                            icon: Icon(isHost ? Icons.edit : Icons.visibility),
+                            label: Text(
+                              isHost ? 'Update Live Score' : 'View Live Score',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                           );
                         },
-                        icon: Icon(isHost ? Icons.edit : Icons.visibility),
-                        label: Text(isHost ? 'Update Live Score' : 'View Live Score'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 12.0),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, stack) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0),
+        child: Text('Failed to load live score: $err'),
+      ),
+    );
+  }
+
+  Widget _buildCricketLiveScoreCard(BuildContext context, bool isHost, TournamentEntity tournament, AsyncValue<CricketLiveScoreEntity?> liveScoreAsync) {
+    return liveScoreAsync.when(
+      data: (liveScore) {
+        final score = liveScore;
+        final hasScore = score != null;
+        return Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.teal.shade200),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Cricket Live Score',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: hasScore ? Colors.teal.shade50 : Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        score?.matchStatus ?? 'No score posted',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: hasScore ? Colors.teal.shade800 : Colors.orange.shade800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (score != null) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(score.battingTeamName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${score.runs}/${score.wickets}',
+                              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text('Overs: ${score.overs}.${score.balls}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                          Text('vs ${score.bowlingTeamName}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  if (score.incidents.isNotEmpty) ...[
+                    Builder(
+                      builder: (context) {
+                        final latestIncidents = score.incidents.length > 3
+                            ? score.incidents.sublist(score.incidents.length - 3)
+                            : score.incidents;
+                        return BroadcastTicker(
+                          incidents: latestIncidents,
+                          badgeColor: const Color(0xFFFFB300),
+                          backgroundColor: const Color(0xFF0B1713),
+                          badgeText: 'EVENT',
+                        );
+                      }
+                    ),
+                  ],
+                ] else ...[
+                  Text(
+                    isHost
+                        ? 'No live score has been posted yet. Add the first update for this tournament.'
+                        : 'The host has not posted a live score yet.',
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Builder(
+                        builder: (context) {
+                          final anyEnabled = tournament.fixtures.any((f) => _isLiveScoreUpdateEnabled(f));
+                          final btnBgColor = isHost
+                              ? (anyEnabled ? Colors.teal.shade700 : Colors.grey.shade300)
+                              : Colors.teal.shade50;
+                          final btnFgColor = isHost
+                              ? (anyEnabled ? Colors.white : Colors.grey.shade600)
+                              : Colors.teal.shade800;
+
+                          return ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: btnBgColor,
+                              foregroundColor: btnFgColor,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                side: BorderSide(
+                                  color: isHost
+                                      ? (anyEnabled ? Colors.teal.shade800 : Colors.grey.shade400)
+                                      : Colors.teal.shade200,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            onPressed: () {
+                              if (isHost) {
+                                if (!anyEnabled) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: const Text(
+                                        "No matches are currently scheduled to start within 1 hour. Please schedule or reschedule a match first.",
+                                      ),
+                                      backgroundColor: Colors.red.shade800,
+                                    ),
+                                  );
+                                  return;
+                                }
+                              }
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => isHost
+                                      ? AddCricketLiveScoreScreen(tournament: tournament)
+                                      : ViewCricketLiveScoreScreen(tournament: tournament),
+                                ),
+                              );
+                            },
+                            icon: Icon(isHost ? Icons.edit : Icons.visibility),
+                            label: Text(
+                              isHost ? 'Update Live Score' : 'View Live Score',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -799,6 +1650,7 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
     final userProfile = ref.watch(userProfileProvider).value;
     final isHost = userProfile?.uid == t.hostUid;
     final liveScoreAsync = _isFootballTournament ? ref.watch(footballLiveScoreStreamProvider(t.id)) : null;
+    final cricketLiveScoreAsync = _isCricketTournament ? ref.watch(cricketLiveScoreStreamProvider(t.id)) : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -846,6 +1698,10 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
             if (_isFootballTournament && liveScoreAsync != null) ...[
               const SizedBox(height: 8),
               _buildLiveScoreCard(context, isHost, t, liveScoreAsync),
+            ],
+            if (_isCricketTournament && cricketLiveScoreAsync != null) ...[
+              const SizedBox(height: 8),
+              _buildCricketLiveScoreCard(context, isHost, t, cricketLiveScoreAsync),
             ],
             const SizedBox(height: 16),
 
@@ -937,7 +1793,7 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                                 ...roundMatches.asMap().entries.map((entry) {
                                   final int matchIdx = entry.key;
                                   final Map<String, dynamic> fixture = entry.value;
-                                  final double slotHeight = 160.0 * (1 << rIndex);
+                                  final double slotHeight = 330.0 * (1 << rIndex);
 
                                   return SizedBox(
                                     width: 280,
@@ -982,24 +1838,42 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (_isFootballTournament) ...[
+              if (_isFootballTournament || _isCricketTournament) ...[
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () {
+                      if (isHost) {
+                        final anyEnabled = t.fixtures.any((f) => _isLiveScoreUpdateEnabled(f));
+                        if (!anyEnabled) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text(
+                                "No matches are currently scheduled to start within 1 hour. Please schedule or reschedule a match first.",
+                              ),
+                              backgroundColor: Colors.red.shade800,
+                            ),
+                          );
+                          return;
+                        }
+                      }
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => isHost
-                              ? AddFootballLiveScoreScreen(tournament: t)
-                              : ViewFootballLiveScoreScreen(tournament: t),
+                              ? (_isFootballTournament
+                                  ? AddFootballLiveScoreScreen(tournament: t)
+                                  : AddCricketLiveScoreScreen(tournament: t))
+                              : (_isFootballTournament
+                                  ? ViewFootballLiveScoreScreen(tournament: t)
+                                  : ViewCricketLiveScoreScreen(tournament: t)),
                         ),
                       );
                     },
                     icon: Icon(isHost ? Icons.edit : Icons.visibility),
                     label: Text(isHost ? 'Update Live Score' : 'View Live Score'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange.shade700,
+                      backgroundColor: _isFootballTournament ? Colors.orange.shade700 : Colors.teal.shade700,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
@@ -1036,15 +1910,232 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                         ))
                   : (t.isFixtureGenerated
                       ? const ElevatedButton(onPressed: null, child: Text("Registration Closed"))
-                      : ElevatedButton(
-                          onPressed: _showJoinDialog,
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
-                          child: const Text("Join Tournament"),
-                        )),
+                      : t.registeredTeams.length >= t.maxTeams
+                          ? ElevatedButton(
+                              onPressed: null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.grey.shade400,
+                                foregroundColor: Colors.white70,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                              ),
+                              child: const Text("Tournament Full"),
+                            )
+                          : ElevatedButton(
+                              onPressed: _showJoinDialog,
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
+                              child: const Text("Join Tournament"),
+                            )),
             ],
           ),
         ),
       ),
     );
   }
+}
+
+class BroadcastTicker extends StatefulWidget {
+  final List<String> incidents;
+  final Color badgeColor;
+  final Color backgroundColor;
+  final String badgeText;
+
+  const BroadcastTicker({
+    super.key,
+    required this.incidents,
+    this.badgeColor = const Color(0xFFE65100),
+    this.backgroundColor = const Color(0xFF1A1A1A),
+    this.badgeText = 'EVENT',
+  });
+
+  @override
+  State<BroadcastTicker> createState() => _BroadcastTickerState();
+}
+
+class _BroadcastTickerState extends State<BroadcastTicker> with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController;
+  late final Animation<double> _pulseAnimation;
+  Timer? _cycleTimer;
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _startCycling();
+  }
+
+  @override
+  void didUpdateWidget(covariant BroadcastTicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.incidents.length != oldWidget.incidents.length) {
+      _startCycling();
+    }
+  }
+
+  void _startCycling() {
+    _cycleTimer?.cancel();
+    if (widget.incidents.isEmpty) return;
+
+    _currentIndex = 0;
+
+    _cycleTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (mounted && widget.incidents.isNotEmpty) {
+        setState(() {
+          _currentIndex = (_currentIndex + 1) % widget.incidents.length;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _cycleTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.incidents.isEmpty) return const SizedBox.shrink();
+
+    final activeIndex = _currentIndex < widget.incidents.length ? _currentIndex : 0;
+    final String currentText = widget.incidents[activeIndex];
+
+    return Container(
+      height: 40,
+      margin: const EdgeInsets.only(top: 12),
+      decoration: BoxDecoration(
+        color: widget.backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            height: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: widget.badgeColor,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(8),
+                bottomLeft: Radius.circular(8),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedBuilder(
+                  animation: _pulseAnimation,
+                  builder: (context, child) {
+                    return Opacity(
+                      opacity: _pulseAnimation.value,
+                      child: Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  widget.badgeText,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          CustomPaint(
+            size: const Size(12, 40),
+            painter: _SlantedDividerPainter(color: widget.badgeColor),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 500),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  final offsetAnimation = Tween<Offset>(
+                    begin: const Offset(0.0, 1.0),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
+
+                  final fadeAnimation = CurvedAnimation(parent: animation, curve: Curves.easeIn);
+
+                  return SlideTransition(
+                    position: offsetAnimation,
+                    child: FadeTransition(
+                      opacity: fadeAnimation,
+                      child: child,
+                    ),
+                  );
+                },
+                child: Align(
+                  key: ValueKey<String>(currentText),
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    currentText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SlantedDividerPainter extends CustomPainter {
+  final Color color;
+
+  _SlantedDividerPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(0, size.height)
+      ..lineTo(size.width * 0.4, size.height)
+      ..lineTo(size.width, 0)
+      ..close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SlantedDividerPainter oldDelegate) => oldDelegate.color != color;
 }

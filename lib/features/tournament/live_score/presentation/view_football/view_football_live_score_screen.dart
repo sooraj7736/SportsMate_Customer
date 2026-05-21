@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -46,6 +48,14 @@ class ViewFootballLiveScoreScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 16),
+                      Center(
+                        child: FootballSpectatorTimer(
+                          timerStartedAt: liveScore.timerStartedAt,
+                          timerAccumulatedSeconds: liveScore.timerAccumulatedSeconds,
+                          isTimerRunning: liveScore.isTimerRunning,
+                        ),
+                      ),
                       const SizedBox(height: 20),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -74,10 +84,6 @@ class ViewFootballLiveScoreScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      if (liveScore.minute != null) ...[
-                        const SizedBox(height: 16),
-                        Text('Minute: ${liveScore.minute}'),
-                      ],
                       if (liveScore.note != null && liveScore.note!.isNotEmpty) ...[
                         const SizedBox(height: 16),
                         Container(
@@ -146,10 +152,17 @@ class _IncidentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final parts = event.split(' • ');
-    final incidentType = parts.isNotEmpty ? parts[0] : 'Incident';
-    final teamName = parts.length > 1 ? parts[1] : '';
-    final playerName = parts.length > 2 ? parts[2] : '';
-    final extraNote = parts.length > 3 ? parts.sublist(3).join(' • ') : '';
+    int offset = 0;
+    String minutePrefix = '';
+    if (parts.isNotEmpty && parts[0].endsWith("'")) {
+      minutePrefix = parts[0];
+      offset = 1;
+    }
+
+    final incidentType = parts.length > offset ? parts[offset] : 'Incident';
+    final teamName = parts.length > offset + 1 ? parts[offset + 1] : '';
+    final playerName = parts.length > offset + 2 ? parts[offset + 2] : '';
+    final extraNote = parts.length > offset + 3 ? parts.sublist(offset + 3).join(' • ') : '';
 
     final lowerType = incidentType.toLowerCase();
     final isRed = lowerType.contains('red');
@@ -212,7 +225,7 @@ class _IncidentCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
-                        incidentType,
+                        minutePrefix.isNotEmpty ? "$minutePrefix • $incidentType" : incidentType,
                         style: TextStyle(fontWeight: FontWeight.w700, color: accentColor, fontSize: 12),
                       ),
                     ),
@@ -271,9 +284,13 @@ class _IncidentSummary extends StatelessWidget {
     
     for (final event in events) {
       final parts = event.split(' • ');
-      if (parts.length >= 2) {
-        final incidentType = parts[0].toLowerCase();
-        final teamName = parts[1];
+      int offset = 0;
+      if (parts.isNotEmpty && parts[0].endsWith("'")) {
+        offset = 1;
+      }
+      if (parts.length >= offset + 2) {
+        final incidentType = parts[offset].toLowerCase();
+        final teamName = parts[offset + 1];
         
         if (!cardsByTeam.containsKey(teamName)) {
           cardsByTeam[teamName] = {'yellow': 0, 'red': 0, 'total': 0};
@@ -358,6 +375,149 @@ class _IncidentSummary extends StatelessWidget {
                 ),
               );
             }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class FootballSpectatorTimer extends StatefulWidget {
+  final DateTime? timerStartedAt;
+  final int timerAccumulatedSeconds;
+  final bool isTimerRunning;
+
+  const FootballSpectatorTimer({
+    super.key,
+    required this.timerStartedAt,
+    required this.timerAccumulatedSeconds,
+    required this.isTimerRunning,
+  });
+
+  @override
+  State<FootballSpectatorTimer> createState() => _FootballSpectatorTimerState();
+}
+
+class _FootballSpectatorTimerState extends State<FootballSpectatorTimer> {
+  Timer? _timer;
+  int _elapsedSeconds = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateTime();
+    if (widget.isTimerRunning) {
+      _startTimer();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant FootballSpectatorTimer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.timerStartedAt != oldWidget.timerStartedAt ||
+        widget.timerAccumulatedSeconds != oldWidget.timerAccumulatedSeconds ||
+        widget.isTimerRunning != oldWidget.isTimerRunning) {
+      _updateTime();
+      if (widget.isTimerRunning) {
+        _startTimer();
+      } else {
+        _stopTimer();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _stopTimer();
+    super.dispose();
+  }
+
+  void _updateTime() {
+    if (widget.isTimerRunning && widget.timerStartedAt != null) {
+      final diff = DateTime.now().difference(widget.timerStartedAt!).inSeconds;
+      _elapsedSeconds = (widget.timerAccumulatedSeconds + diff).clamp(0, 7200);
+    } else {
+      _elapsedSeconds = widget.timerAccumulatedSeconds.clamp(0, 7200);
+    }
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          _updateTime();
+        });
+      }
+    });
+  }
+
+  void _stopTimer() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final minutes = _elapsedSeconds ~/ 60;
+    final seconds = _elapsedSeconds % 60;
+    final timeStr = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: widget.isTimerRunning ? Colors.greenAccent.shade400 : Colors.redAccent.shade200,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (widget.isTimerRunning ? Colors.greenAccent : Colors.redAccent).withOpacity(0.25),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: widget.isTimerRunning ? Colors.greenAccent : Colors.redAccent,
+              boxShadow: [
+                BoxShadow(
+                  color: widget.isTimerRunning ? Colors.greenAccent : Colors.redAccent,
+                  blurRadius: 4,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            timeStr,
+            style: const TextStyle(
+              color: Colors.greenAccent,
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Courier',
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            widget.isTimerRunning ? 'LIVE' : 'PAUSED',
+            style: TextStyle(
+              color: widget.isTimerRunning ? Colors.greenAccent : Colors.redAccent,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
           ),
         ],
       ),

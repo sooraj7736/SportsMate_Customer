@@ -27,6 +27,7 @@ class TournamentEntity {
   final String contactPhone;
   final bool isBoosted;
   final String status;
+  final int minPlayersPerTeam;
 
   TournamentEntity({
     required this.id,
@@ -55,6 +56,7 @@ class TournamentEntity {
     this.contactPhone = '',
     this.isBoosted = false,
     this.status = 'Open',
+    this.minPlayersPerTeam = 5,
   });
 
   Map<String, dynamic> toMap() {
@@ -84,6 +86,7 @@ class TournamentEntity {
       'contactPhone': contactPhone,
       'isBoosted': isBoosted,
       'status': status,
+      'minPlayersPerTeam': minPlayersPerTeam,
     };
   }
 
@@ -115,6 +118,7 @@ class TournamentEntity {
       contactPhone: map['contactPhone'] ?? '',
       isBoosted: map['isBoosted'] ?? false,
       status: map['status'] ?? 'Open',
+      minPlayersPerTeam: map['minPlayersPerTeam']?.toInt() ?? 5,
     );
   }
 }

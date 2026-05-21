@@ -630,6 +630,11 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                   ? 0.0
                                   : (filledSpots / maxPlayers).clamp(0.0, 1.0);
                               final isMatchFull = filledSpots >= maxPlayers;
+                              final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+                              final hasJoined = currentUserUid != null &&
+                                  game.joinedPlayers.any(
+                                    (p) => p.uid == currentUserUid && !p.isGuest,
+                                  );
                               final distance = (activeAddress != null &&
                                       game.lat != null &&
                                       game.lng != null)
@@ -959,7 +964,34 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                                 ),
                                               ],
                                             )
-                                          : SizedBox(
+                                           : hasJoined
+                                               ? SizedBox(
+                                                   width: double.infinity,
+                                                   child: OutlinedButton(
+                                                     onPressed: null,
+                                                     style: OutlinedButton.styleFrom(
+                                                       backgroundColor: const Color(0xFFE8F5E9),
+                                                       side: const BorderSide(
+                                                         color: Color(0xFF81C784),
+                                                         width: 1.5,
+                                                       ),
+                                                       padding: const EdgeInsets.symmetric(
+                                                         vertical: 12,
+                                                       ),
+                                                       shape: RoundedRectangleBorder(
+                                                         borderRadius: BorderRadius.circular(14),
+                                                       ),
+                                                     ),
+                                                     child: const Text(
+                                                       'Already Joined',
+                                                       style: TextStyle(
+                                                         color: Color(0xFF2E7D32),
+                                                         fontWeight: FontWeight.w800,
+                                                       ),
+                                                     ),
+                                                   ),
+                                                 )
+                                               : SizedBox(
                                               width: double.infinity,
                                               child: ElevatedButton(
                                                 onPressed: isMatchFull
@@ -1084,6 +1116,23 @@ Future<void> showJoinGameBottomSheet(
       builder: (dialogContext) => AlertDialog(
         title: const Text('Sign in required'),
         content: const Text('Please sign in before joining a game.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  final hasJoined = game.joinedPlayers.any((p) => p.uid == currentUserUid && !p.isGuest);
+  if (hasJoined) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Already Joined'),
+        content: const Text('You have already joined this game.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),

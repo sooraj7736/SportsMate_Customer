@@ -13,6 +13,9 @@ class FootballLiveScoreEntity {
   final String updatedByUid;
   final String updatedByName;
   final DateTime updatedAt;
+  final DateTime? timerStartedAt;
+  final int timerAccumulatedSeconds;
+  final bool isTimerRunning;
 
   const FootballLiveScoreEntity({
     required this.tournamentId,
@@ -27,6 +30,9 @@ class FootballLiveScoreEntity {
     this.minute,
     this.note,
     this.foulEvents = const [],
+    this.timerStartedAt,
+    this.timerAccumulatedSeconds = 0,
+    this.isTimerRunning = false,
   });
 
   factory FootballLiveScoreEntity.fromMap(Map<String, dynamic> map, String tournamentId) {
@@ -43,6 +49,9 @@ class FootballLiveScoreEntity {
       updatedByUid: map['updatedByUid'] ?? '',
       updatedByName: map['updatedByName'] ?? '',
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      timerStartedAt: (map['timerStartedAt'] as Timestamp?)?.toDate(),
+      timerAccumulatedSeconds: map['timerAccumulatedSeconds']?.toInt() ?? ((map['minute']?.toInt() ?? 0) * 60),
+      isTimerRunning: map['isTimerRunning'] ?? false,
     );
   }
 
@@ -60,6 +69,9 @@ class FootballLiveScoreEntity {
       'updatedByUid': updatedByUid,
       'updatedByName': updatedByName,
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'timerStartedAt': timerStartedAt != null ? Timestamp.fromDate(timerStartedAt!) : null,
+      'timerAccumulatedSeconds': timerAccumulatedSeconds,
+      'isTimerRunning': isTimerRunning,
     };
   }
 }

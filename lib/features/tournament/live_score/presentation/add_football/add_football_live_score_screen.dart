@@ -35,6 +35,13 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
   List<String> _foulEvents = [];
   String _saveLabel = 'Auto-saving enabled';
 
+  // Live Timer states
+  Timer? _matchTimer;
+  bool _isTimerRunning = false;
+  int _elapsedSeconds = 0;
+  DateTime? _timerStartedAt;
+  int _timerAccumulatedSeconds = 0;
+
   @override
   void initState() {
     super.initState();
@@ -45,16 +52,34 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
     _foulController = TextEditingController();
     _hostScore = existingScore?.hostTeamScore ?? 0;
     _guestScore = existingScore?.guestTeamScore ?? 0;
-    _minute = (existingScore?.minute ?? 0).toDouble();
+
+    // Restore persistent states
+    _isTimerRunning = existingScore?.isTimerRunning ?? false;
+    _timerStartedAt = existingScore?.timerStartedAt;
+    _timerAccumulatedSeconds = existingScore?.timerAccumulatedSeconds ?? ((existingScore?.minute ?? 0) * 60);
+
+    if (_isTimerRunning && _timerStartedAt != null) {
+      final difference = DateTime.now().difference(_timerStartedAt!).inSeconds;
+      _elapsedSeconds = (_timerAccumulatedSeconds + difference).clamp(0, 7200);
+    } else {
+      _elapsedSeconds = _timerAccumulatedSeconds.clamp(0, 7200);
+    }
+    _minute = (_elapsedSeconds ~/ 60).toDouble();
+
     _matchStatus = existingScore?.matchStatus ?? 'Live';
     _foulEvents = List<String>.from(existingScore?.foulEvents ?? const []);
     _selectedEventTeam = _teamNames.isNotEmpty ? _teamNames.first : null;
     _selectedEventPlayer = _playersForTeam(_selectedEventTeam).isNotEmpty ? _playersForTeam(_selectedEventTeam).first : null;
     _isReady = true;
+
+    if (_isTimerRunning) {
+      _startTickingLoop();
+    }
   }
 
   @override
   void dispose() {
+    _matchTimer?.cancel();
     _saveDebounce?.cancel();
     _hostTeamController.dispose();
     _guestTeamController.dispose();
@@ -80,6 +105,7 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
     return widget.tournament.registeredTeams
         .map((team) => team['teamName']?.toString() ?? 'Unknown Team')
         .where((teamName) => teamName.trim().isNotEmpty)
+        .toSet()
         .toList();
   }
 
@@ -99,7 +125,11 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
   List<String> _playersForTeam(String? teamName) {
     final team = _teamForName(teamName);
     final players = (team?['players'] as List<dynamic>?) ?? const [];
-    return players.map((player) => player.toString()).where((player) => player.trim().isNotEmpty).toList();
+    return players
+        .map((player) => player.toString().trim())
+        .where((player) => player.isNotEmpty)
+        .toSet()
+        .toList();
   }
 
   void _scheduleAutoSave() {
@@ -109,6 +139,60 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
     if (mounted) {
       setState(() => _saveLabel = 'Saving...');
     }
+  }
+
+  void _startTickingLoop() {
+    _matchTimer?.cancel();
+    _matchTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          if (_timerStartedAt != null) {
+            final difference = DateTime.now().difference(_timerStartedAt!).inSeconds;
+            _elapsedSeconds = (_timerAccumulatedSeconds + difference).clamp(0, 7200);
+          } else {
+            _elapsedSeconds = _timerAccumulatedSeconds.clamp(0, 7200);
+          }
+          _minute = (_elapsedSeconds ~/ 60).toDouble();
+        });
+        if (_elapsedSeconds % 15 == 0) {
+          _scheduleAutoSave();
+        }
+      }
+    });
+  }
+
+  void _toggleTimer() {
+    if (_isTimerRunning) {
+      _matchTimer?.cancel();
+      setState(() {
+        _isTimerRunning = false;
+        _timerAccumulatedSeconds = _elapsedSeconds;
+        _timerStartedAt = null;
+      });
+      _saveScore(); // Save immediately when pausing
+    } else {
+      setState(() {
+        _isTimerRunning = true;
+        _timerStartedAt = DateTime.now();
+        _timerAccumulatedSeconds = _elapsedSeconds;
+      });
+      _startTickingLoop();
+      _saveScore(); // Save immediately when resuming
+    }
+  }
+
+  void _adjustTimer(int newSeconds) {
+    setState(() {
+      _elapsedSeconds = newSeconds.clamp(0, 7200);
+      _minute = (_elapsedSeconds ~/ 60).toDouble();
+      _timerAccumulatedSeconds = _elapsedSeconds;
+      if (_isTimerRunning) {
+        _timerStartedAt = DateTime.now();
+      } else {
+        _timerStartedAt = null;
+      }
+    });
+    _saveScore(); // Save immediately to database on manual time adjustment
   }
 
   void _changeScore({required bool host, required int delta}) {
@@ -129,7 +213,8 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
     final playerName = _selectedEventPlayer?.trim() ?? '';
     if (teamName.isEmpty || playerName.isEmpty) return;
 
-    final segments = [normalizedType, teamName, playerName];
+    final minuteStr = "${_minute.round()}'";
+    final segments = [minuteStr, normalizedType, teamName, playerName];
     if (normalizedNote.isNotEmpty) {
       segments.add(normalizedNote);
     }
@@ -138,6 +223,15 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
     setState(() {
       _foulEvents = [..._foulEvents, eventText];
       _foulController.clear();
+      
+      // Auto-increment scores on Goals
+      if (normalizedType.toLowerCase() == 'goal') {
+        if (teamName == _hostTeamController.text.trim()) {
+          _hostScore = (_hostScore + 1).clamp(0, 99);
+        } else if (teamName == _guestTeamController.text.trim()) {
+          _guestScore = (_guestScore + 1).clamp(0, 99);
+        }
+      }
     });
     _scheduleAutoSave();
   }
@@ -173,6 +267,9 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
         updatedByUid: userProfile.uid,
         updatedByName: userProfile.name,
         updatedAt: DateTime.now(),
+        timerStartedAt: _timerStartedAt,
+        timerAccumulatedSeconds: _timerAccumulatedSeconds,
+        isTimerRunning: _isTimerRunning,
       );
 
       await ref.read(footballLiveScoreRepositoryProvider).saveLiveScore(entity);
@@ -297,34 +394,226 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
                   ],
                 ),
                 const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.12), borderRadius: BorderRadius.circular(18)),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                Builder(
+                  builder: (context) {
+                    int matchDuration = 90;
+                    for (final fixture in widget.tournament.fixtures) {
+                      if (fixture['duration'] != null) {
+                        final d = int.tryParse(fixture['duration'].toString());
+                        if (d != null) {
+                          matchDuration = d;
+                          break;
+                        }
+                      }
+                    }
+
+                    final minutes = _elapsedSeconds ~/ 60;
+                    final seconds = _elapsedSeconds % 60;
+                    final timeStr = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+
+                    Widget stoppageChip(String label, int minutesToAdd) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: ActionChip(
+                          backgroundColor: Colors.white.withOpacity(0.16),
+                          label: Text(label, style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold)),
+                          side: const BorderSide(color: Colors.white24),
+                          onPressed: () => _adjustTimer(_elapsedSeconds + (minutesToAdd * 60)),
+                        ),
+                      );
+                    }
+
+                    Widget presetButton(String label, int targetMinutes) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: ActionChip(
+                          backgroundColor: Colors.amber.shade700.withOpacity(0.3),
+                          label: Text(label, style: const TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold)),
+                          side: const BorderSide(color: Colors.amberAccent),
+                          onPressed: () => _adjustTimer(targetMinutes * 60),
+                        ),
+                      );
+                    }
+
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: Column(
                         children: [
-                          const Icon(Icons.timer_outlined, color: Colors.white),
-                          const SizedBox(width: 8),
-                          Text(_minute <= 0 ? 'Minute not set' : 'Minute ${_minute.round()}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.timer_outlined, color: Colors.white, size: 20),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _isTimerRunning ? 'Match Timer Running' : 'Match Timer Paused',
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                              Text(
+                                'Limit: $matchDuration Mins',
+                                style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: (_elapsedSeconds / (matchDuration * 60)).clamp(0.0, 1.0),
+                              backgroundColor: Colors.white12,
+                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.greenAccent),
+                              minHeight: 4,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Left Column: Controls (Start / Pause, Replay, Adjustments)
+                              Expanded(
+                                flex: 3,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    ElevatedButton.icon(
+                                      onPressed: _toggleTimer,
+                                      icon: Icon(
+                                        _isTimerRunning ? Icons.pause : Icons.play_arrow,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                      label: Text(
+                                        _isTimerRunning
+                                            ? 'PAUSE TIMER'
+                                            : (_elapsedSeconds == 0 ? 'START MATCH' : 'RESUME TIMER'),
+                                        style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5, fontSize: 12),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: _isTimerRunning ? Colors.red.shade700 : Colors.green.shade700,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        elevation: 2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.replay, color: Colors.white, size: 20),
+                                          tooltip: 'Reset to 0:00',
+                                          onPressed: () => _adjustTimer(0),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.remove, color: Colors.white, size: 18),
+                                          tooltip: '-1 Min',
+                                          onPressed: () => _adjustTimer(_elapsedSeconds - 60),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.add, color: Colors.white, size: 18),
+                                          tooltip: '+1 Min',
+                                          onPressed: () => _adjustTimer(_elapsedSeconds + 60),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              // Right Column: Live Digital Clock Display
+                              Expanded(
+                                flex: 2,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: double.infinity,
+                                      alignment: Alignment.center,
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.greenAccent.withOpacity(0.4), width: 1.5),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.greenAccent.withOpacity(0.2),
+                                            blurRadius: 10,
+                                            spreadRadius: 2,
+                                          ),
+                                        ],
+                                      ),
+                                      child: Text(
+                                        timeStr,
+                                        style: const TextStyle(
+                                          color: Colors.greenAccent,
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.bold,
+                                          fontFamily: 'Courier',
+                                          letterSpacing: 2,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(color: Colors.white24, height: 24),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Add Stoppage / Injury Time',
+                                    style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                                  ),
+                                  if (minutes == matchDuration ~/ 2 || minutes == matchDuration)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.redAccent.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(color: Colors.redAccent, width: 0.5),
+                                      ),
+                                      child: const Text(
+                                        'Stoppage Phase',
+                                        style: TextStyle(color: Colors.redAccent, fontSize: 8, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    stoppageChip('+1m', 1),
+                                    stoppageChip('+2m', 2),
+                                    stoppageChip('+3m', 3),
+                                    stoppageChip('+5m', 5),
+                                    stoppageChip('+10m', 10),
+                                    presetButton('Go 45m', 45),
+                                    presetButton('Go 90m', 90),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
-                      Slider(
-                        value: _minute,
-                        min: 0,
-                        max: 120,
-                        divisions: 120,
-                        activeColor: Colors.white,
-                        inactiveColor: Colors.white24,
-                        label: _minute <= 0 ? 'Off' : _minute.round().toString(),
-                        onChanged: (value) {
-                          setState(() => _minute = value);
-                          _scheduleAutoSave();
-                        },
-                      ),
-                    ],
-                  ),
+                    );
+                  }
                 ),
               ],
             ),
@@ -371,6 +660,7 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
                         spacing: 8,
                         runSpacing: 8,
                         children: [
+                          _QuickEventChip(label: 'Goal', color: Colors.orange.shade100, textColor: Colors.orange.shade900, selected: _selectedEventType == 'Goal', onTap: () => setState(() => _selectedEventType = 'Goal')),
                           _QuickEventChip(label: 'Yellow card', color: Colors.amber.shade100, textColor: Colors.amber.shade900, selected: _selectedEventType == 'Yellow card', onTap: () => setState(() => _selectedEventType = 'Yellow card')),
                           _QuickEventChip(label: 'Red card', color: Colors.red.shade100, textColor: Colors.red.shade900, selected: _selectedEventType == 'Red card', onTap: () => setState(() => _selectedEventType = 'Red card')),
                           _QuickEventChip(label: 'Foul', color: Colors.blue.shade50, textColor: Colors.blue.shade900, selected: _selectedEventType == 'Foul', onTap: () => setState(() => _selectedEventType = 'Foul')),
@@ -381,7 +671,7 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: _selectedEventTeam,
+                        value: _teamNames.contains(_selectedEventTeam) ? _selectedEventTeam : null,
                         decoration: const InputDecoration(labelText: 'Team', border: OutlineInputBorder()),
                         items: _teamNames
                             .map(
@@ -401,7 +691,9 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: _selectedEventPlayer,
+                        value: (_selectedEventPlayer != null && _playersForTeam(_selectedEventTeam).contains(_selectedEventPlayer))
+                            ? _selectedEventPlayer
+                            : null,
                         decoration: const InputDecoration(labelText: 'Player', border: OutlineInputBorder()),
                         items: _playersForTeam(_selectedEventTeam)
                             .map(
