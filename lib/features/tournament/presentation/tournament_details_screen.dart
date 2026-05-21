@@ -26,15 +26,20 @@ class TournamentDetailsScreen extends ConsumerStatefulWidget {
   const TournamentDetailsScreen({super.key, required this.tournament});
 
   @override
-  ConsumerState<TournamentDetailsScreen> createState() => _TournamentDetailsScreenState();
+  ConsumerState<TournamentDetailsScreen> createState() =>
+      _TournamentDetailsScreenState();
 }
 
-class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScreen> {
+class _TournamentDetailsScreenState
+    extends ConsumerState<TournamentDetailsScreen> {
   bool _isGeneratingFixtures = false;
 
-  bool get _isFootballTournament => widget.tournament.sport.toLowerCase() == 'football';
-  bool get _isCricketTournament => widget.tournament.sport.toLowerCase() == 'cricket';
-  bool get _isBasketballTournament => widget.tournament.sport.toLowerCase() == 'basketball';
+  bool get _isFootballTournament =>
+      widget.tournament.sport.toLowerCase() == 'football';
+  bool get _isCricketTournament =>
+      widget.tournament.sport.toLowerCase() == 'cricket';
+  bool get _isBasketballTournament =>
+      widget.tournament.sport.toLowerCase() == 'basketball';
 
   bool _isLiveScoreUpdateEnabled(Map<String, dynamic> fixture) {
     final date = fixture['date'] as String? ?? '';
@@ -71,28 +76,38 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
 
     switch (type.toLowerCase()) {
       case 'goal':
-        return minutePrefix + '⚽ GOAL!!! Spectacular play by $displayPlayer$displayTeam!$displayNote';
+        return minutePrefix +
+            '⚽ GOAL!!! Spectacular play by $displayPlayer$displayTeam!$displayNote';
       case 'yellow card':
-        return minutePrefix + '🟨 YELLOW CARD! $displayPlayer$displayTeam booked$displayNote.';
+        return minutePrefix +
+            '🟨 YELLOW CARD! $displayPlayer$displayTeam booked$displayNote.';
       case 'red card':
-        return minutePrefix + '🟥 RED CARD! $displayPlayer$displayTeam sent off$displayNote!';
+        return minutePrefix +
+            '🟥 RED CARD! $displayPlayer$displayTeam sent off$displayNote!';
       case 'foul':
-        return minutePrefix + '🚨 FOUL! Infraction by $displayPlayer$displayTeam$displayNote.';
+        return minutePrefix +
+            '🚨 FOUL! Infraction by $displayPlayer$displayTeam$displayNote.';
       case 'penalty':
-        return minutePrefix + '🥅 PENALTY! Spot kick awarded to $displayTeam. $displayPlayer steps up!';
+        return minutePrefix +
+            '🥅 PENALTY! Spot kick awarded to $displayTeam. $displayPlayer steps up!';
       case 'offside':
-        return minutePrefix + '🚩 OFFSIDE! Flag up against $displayPlayer$displayTeam.';
+        return minutePrefix +
+            '🚩 OFFSIDE! Flag up against $displayPlayer$displayTeam.';
       case 'corner':
-        return minutePrefix + '📐 CORNER KICK! $displayTeam takes a set-piece opportunity.';
+        return minutePrefix +
+            '📐 CORNER KICK! $displayTeam takes a set-piece opportunity.';
       default:
-        return minutePrefix + '📢 $type: $displayPlayer$displayTeam$displayNote';
+        return minutePrefix +
+            '📢 $type: $displayPlayer$displayTeam$displayNote';
     }
   }
 
   void _generateFixtures() async {
     final t = widget.tournament;
     if (t.registeredTeams.length < 2) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Need at least 2 teams to set fixtures.")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Need at least 2 teams to set fixtures.")),
+      );
       return;
     }
 
@@ -101,11 +116,13 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
     });
 
     try {
-      final List<Map<String, dynamic>> shuffledTeams = List.from(t.registeredTeams)..shuffle();
+      final List<Map<String, dynamic>> shuffledTeams = List.from(
+        t.registeredTeams,
+      )..shuffle();
       final List<Map<String, dynamic>> newFixtures = [];
 
       final int teamCount = shuffledTeams.length;
-      
+
       // Find the next power of 2 greater than or equal to teamCount
       int powerOfTwo = 2;
       while (powerOfTwo < teamCount) {
@@ -115,8 +132,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
       final int totalMatchesRound1 = powerOfTwo ~/ 2;
       final int byeCount = powerOfTwo - teamCount;
 
-
-      final List<String> shuffledNames = shuffledTeams.map((team) => team['teamName']?.toString() ?? 'Unknown Team').toList();
+      final List<String> shuffledNames = shuffledTeams
+          .map((team) => team['teamName']?.toString() ?? 'Unknown Team')
+          .toList();
 
       int matchNumber = 1;
       List<Map<String, dynamic>> currentRoundMatches = [];
@@ -197,8 +215,10 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
           final prevMatch1Num = prevMatch1['matchNumber'] as int;
           final prevMatch2Num = prevMatch2['matchNumber'] as int;
 
-          final team1Name = matchWinners[prevMatch1Num] ?? "Winner of Match $prevMatch1Num";
-          final team2Name = matchWinners[prevMatch2Num] ?? "Winner of Match $prevMatch2Num";
+          final team1Name =
+              matchWinners[prevMatch1Num] ?? "Winner of Match $prevMatch1Num";
+          final team2Name =
+              matchWinners[prevMatch2Num] ?? "Winner of Match $prevMatch2Num";
 
           final newMatchNum = matchNumber++;
 
@@ -228,15 +248,23 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
         roundIndex++;
       }
 
-      await ref.read(tournamentRepositoryProvider).updateTournamentFixtures(t.id, newFixtures);
+      await ref
+          .read(tournamentRepositoryProvider)
+          .updateTournamentFixtures(t.id, newFixtures);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Tournament fixtures generated successfully!")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Tournament fixtures generated successfully!"),
+          ),
+        );
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error generating fixtures: $e")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error generating fixtures: $e")),
+        );
       }
     } finally {
       if (mounted) {
@@ -267,7 +295,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               title: Row(
                 children: [
                   Icon(Icons.sports_soccer, color: Colors.blue.shade700),
@@ -284,7 +314,10 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     children: [
                       Text(
                         "Fill in the details to register your team. You are automatically set as the Captain.",
-                        style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       TextField(
@@ -305,7 +338,10 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                           border: const OutlineInputBorder(),
                           filled: true,
                           fillColor: Colors.grey.shade100,
-                          prefixIcon: const Icon(Icons.star, color: Colors.amber),
+                          prefixIcon: const Icon(
+                            Icons.star,
+                            color: Colors.amber,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -314,11 +350,18 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                         children: [
                           Text(
                             "Teammates (${1 + memberControllers.length})",
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
                           Text(
                             "Min: ${widget.tournament.minPlayersPerTeam} • Max: 15",
-                            style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
@@ -330,7 +373,11 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                           child: Text(
                             "No teammates added yet. Tap the button below to add your squad.",
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontStyle: FontStyle.italic),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                              fontStyle: FontStyle.italic,
+                            ),
                           ),
                         ),
                       ...memberControllers.asMap().entries.map((entry) {
@@ -346,14 +393,22 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                                   decoration: InputDecoration(
                                     labelText: "Teammate #${idx + 1} Name",
                                     border: const OutlineInputBorder(),
-                                    prefixIcon: const Icon(Icons.person_outline),
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    prefixIcon: const Icon(
+                                      Icons.person_outline,
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 8),
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.red,
+                                ),
                                 onPressed: () {
                                   setDialogState(() {
                                     memberControllers.removeAt(idx);
@@ -369,7 +424,11 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                         onPressed: () {
                           if (1 + memberControllers.length >= 15) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Maximum capacity of 15 reached.")),
+                              const SnackBar(
+                                content: Text(
+                                  "Maximum capacity of 15 reached.",
+                                ),
+                              ),
                             );
                             return;
                           }
@@ -381,7 +440,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                         label: const Text("Add Team Member"),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ],
@@ -403,7 +464,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     final teamName = teamNameController.text.trim();
                     if (teamName.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Please enter a team name.")),
+                        const SnackBar(
+                          content: Text("Please enter a team name."),
+                        ),
                       );
                       return;
                     }
@@ -412,13 +475,19 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     for (int i = 0; i < memberControllers.length; i++) {
                       if (memberControllers[i].text.trim().isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Teammate #${i + 1} name cannot be empty.")),
+                          SnackBar(
+                            content: Text(
+                              "Teammate #${i + 1} name cannot be empty.",
+                            ),
+                          ),
                         );
                         return;
                       }
                     }
 
-                    final newPlayerNames = memberControllers.map((c) => c.text.trim()).toList();
+                    final newPlayerNames = memberControllers
+                        .map((c) => c.text.trim())
+                        .toList();
                     final allNewPlayers = [userProfile.name, ...newPlayerNames];
 
                     // Capacity validation
@@ -426,7 +495,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     if (totalPlayers < widget.tournament.minPlayersPerTeam) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text("Your team needs at least ${widget.tournament.minPlayersPerTeam} players to register. Currently has $totalPlayers."),
+                          content: Text(
+                            "Your team needs at least ${widget.tournament.minPlayersPerTeam} players to register. Currently has $totalPlayers.",
+                          ),
                           backgroundColor: Colors.red.shade800,
                         ),
                       );
@@ -436,7 +507,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     if (totalPlayers > 15) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: const Text("Maximum squad size is 15 players."),
+                          content: const Text(
+                            "Maximum squad size is 15 players.",
+                          ),
                           backgroundColor: Colors.red.shade800,
                         ),
                       );
@@ -444,11 +517,15 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     }
 
                     // Duplication Guard 1: Captain UID Check
-                    final existingCaptains = widget.tournament.registeredTeams.map((t) => t['captainUid'] as String?).toList();
+                    final existingCaptains = widget.tournament.registeredTeams
+                        .map((t) => t['captainUid'] as String?)
+                        .toList();
                     if (existingCaptains.contains(userProfile.uid)) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: const Text("You have already registered a team in this tournament!"),
+                          content: const Text(
+                            "You have already registered a team in this tournament!",
+                          ),
                           backgroundColor: Colors.red.shade800,
                         ),
                       );
@@ -458,11 +535,13 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     // Duplication Guard 2: Case-insensitive Name Check against other teams
                     final Set<String> registeredNames = {};
                     for (final team in widget.tournament.registeredTeams) {
-                      final String captName = team['captainName'] as String? ?? '';
+                      final String captName =
+                          team['captainName'] as String? ?? '';
                       if (captName.isNotEmpty) {
                         registeredNames.add(captName.toLowerCase());
                       }
-                      final playersList = (team['players'] as List<dynamic>?) ?? [];
+                      final playersList =
+                          (team['players'] as List<dynamic>?) ?? [];
                       for (final p in playersList) {
                         if (p != null) {
                           registeredNames.add(p.toString().toLowerCase());
@@ -474,7 +553,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                       if (registeredNames.contains(name.toLowerCase())) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text("Player '$name' is already registered in another team in this tournament!"),
+                            content: Text(
+                              "Player '$name' is already registered in another team in this tournament!",
+                            ),
                             backgroundColor: Colors.red.shade800,
                           ),
                         );
@@ -483,11 +564,15 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     }
 
                     // Duplication Guard 3: Internal Name Check
-                    final uniqueNewPlayers = allNewPlayers.map((n) => n.toLowerCase()).toSet();
+                    final uniqueNewPlayers = allNewPlayers
+                        .map((n) => n.toLowerCase())
+                        .toSet();
                     if (uniqueNewPlayers.length < allNewPlayers.length) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: const Text("Duplicate player names detected in your team list!"),
+                          content: const Text(
+                            "Duplicate player names detected in your team list!",
+                          ),
                           backgroundColor: Colors.red.shade800,
                         ),
                       );
@@ -495,9 +580,14 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     }
 
                     // Limit registration count
-                    if (widget.tournament.registeredTeams.length >= widget.tournament.maxTeams) {
+                    if (widget.tournament.registeredTeams.length >=
+                        widget.tournament.maxTeams) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Tournament is already full! No more teams can join.")),
+                        const SnackBar(
+                          content: Text(
+                            "Tournament is already full! No more teams can join.",
+                          ),
+                        ),
                       );
                       Navigator.pop(context);
                       return;
@@ -507,21 +597,65 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                       'teamName': teamName,
                       'captainUid': userProfile.uid,
                       'captainName': userProfile.name,
-                      'players': newPlayerNames, // Keep teammates in players array
+                      'players':
+                          newPlayerNames, // Keep teammates in players array
                     };
 
                     try {
-                      await ref.read(tournamentRepositoryProvider).joinTournament(widget.tournament.id, teamData);
+                      await ref
+                          .read(tournamentRepositoryProvider)
+                          .joinTournament(widget.tournament.id, teamData);
+
+                      try {
+                        await ref
+                            .read(notificationsRepositoryProvider)
+                            .sendNotification(
+                              NotificationEntity(
+                                id: '',
+                                targetUserId: widget.tournament.hostUid,
+                                title: 'New Tournament Registration',
+                                body:
+                                    '${userProfile.name} joined ${widget.tournament.tournamentName} with team "$teamName".',
+                                date: DateTime.now(),
+                              ),
+                            );
+                      } catch (_) {
+                        // Non-blocking notification failure.
+                      }
+
+                      try {
+                        await ref
+                            .read(notificationsRepositoryProvider)
+                            .sendNotification(
+                              NotificationEntity(
+                                id: '',
+                                targetUserId: userProfile.uid,
+                                title: 'Tournament Joined',
+                                body:
+                                    'You successfully joined ${widget.tournament.tournamentName} with team "$teamName".',
+                                date: DateTime.now(),
+                              ),
+                            );
+                      } catch (_) {
+                        // Non-blocking notification failure.
+                      }
+
                       for (var c in memberControllers) {
                         c.dispose();
                       }
                       if (mounted) {
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Successfully joined tournament!")));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Successfully joined tournament!"),
+                          ),
+                        );
                       }
                     } catch (e) {
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error joining: $e")));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Error joining: $e")),
+                        );
                       }
                     }
                   },
@@ -536,7 +670,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
   }
 
   void _editFixtures() {
-    List<Map<String, dynamic>> editedFixtures = List.from(widget.tournament.fixtures.map((e) => Map<String, dynamic>.from(e)));
+    List<Map<String, dynamic>> editedFixtures = List.from(
+      widget.tournament.fixtures.map((e) => Map<String, dynamic>.from(e)),
+    );
     showDialog(
       context: context,
       builder: (context) {
@@ -555,7 +691,12 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Match ${fixture['matchNumber']}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              "Match ${fixture['matchNumber']}",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             const SizedBox(height: 8),
                             Row(
                               children: [
@@ -565,32 +706,59 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                                     value: fixture['team1'],
                                     items: widget.tournament.registeredTeams
                                         .map((t) => t['teamName'].toString())
-                                        .followedBy(['BYE', fixture['team1'].toString()])
+                                        .followedBy([
+                                          'BYE',
+                                          fixture['team1'].toString(),
+                                        ])
                                         .toSet()
                                         .toList()
                                         .map((t) {
-                                      return DropdownMenuItem(value: t, child: Text(t, overflow: TextOverflow.ellipsis));
-                                    }).toList(),
+                                          return DropdownMenuItem(
+                                            value: t,
+                                            child: Text(
+                                              t,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          );
+                                        })
+                                        .toList(),
                                     onChanged: (val) {
-                                      setDialogState(() => fixture['team1'] = val);
+                                      setDialogState(
+                                        () => fixture['team1'] = val,
+                                      );
                                     },
                                   ),
                                 ),
-                                const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text("VS")),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 8),
+                                  child: Text("VS"),
+                                ),
                                 Expanded(
                                   child: DropdownButtonFormField<String>(
                                     isExpanded: true,
                                     value: fixture['team2'],
                                     items: widget.tournament.registeredTeams
                                         .map((t) => t['teamName'].toString())
-                                        .followedBy(['BYE', fixture['team2'].toString()])
+                                        .followedBy([
+                                          'BYE',
+                                          fixture['team2'].toString(),
+                                        ])
                                         .toSet()
                                         .toList()
                                         .map((t) {
-                                      return DropdownMenuItem(value: t, child: Text(t, overflow: TextOverflow.ellipsis));
-                                    }).toList(),
+                                          return DropdownMenuItem(
+                                            value: t,
+                                            child: Text(
+                                              t,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          );
+                                        })
+                                        .toList(),
                                     onChanged: (val) {
-                                      setDialogState(() => fixture['team2'] = val);
+                                      setDialogState(
+                                        () => fixture['team2'] = val,
+                                      );
                                     },
                                   ),
                                 ),
@@ -604,15 +772,31 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                 ),
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Cancel"),
+                ),
                 ElevatedButton(
                   onPressed: () async {
                     Navigator.pop(context);
                     try {
-                      await ref.read(tournamentRepositoryProvider).updateTournamentFixtures(widget.tournament.id, editedFixtures);
-                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Fixtures updated successfully!")));
+                      await ref
+                          .read(tournamentRepositoryProvider)
+                          .updateTournamentFixtures(
+                            widget.tournament.id,
+                            editedFixtures,
+                          );
+                      if (mounted)
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Fixtures updated successfully!"),
+                          ),
+                        );
                     } catch (e) {
-                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error saving: $e")));
+                      if (mounted)
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Error saving: $e")),
+                        );
                     }
                   },
                   child: const Text("Save"),
@@ -627,19 +811,26 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
 
   void _editMatchSchedule(Map<String, dynamic> targetFixture) async {
     DateTime? initialDate;
-    if (targetFixture['date'] != null && targetFixture['date'].toString().isNotEmpty) {
+    if (targetFixture['date'] != null &&
+        targetFixture['date'].toString().isNotEmpty) {
       try {
         initialDate = DateTime.parse(targetFixture['date'].toString());
       } catch (_) {}
     }
-    initialDate ??= (widget.tournament.startDate.isAfter(DateTime.now()) ? widget.tournament.startDate : DateTime.now());
+    initialDate ??= (widget.tournament.startDate.isAfter(DateTime.now())
+        ? widget.tournament.startDate
+        : DateTime.now());
 
     TimeOfDay? initialTime;
-    if (targetFixture['time'] != null && targetFixture['time'].toString().isNotEmpty) {
+    if (targetFixture['time'] != null &&
+        targetFixture['time'].toString().isNotEmpty) {
       try {
         final parts = targetFixture['time'].toString().split(':');
         if (parts.length >= 2) {
-          initialTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+          initialTime = TimeOfDay(
+            hour: int.parse(parts[0]),
+            minute: int.parse(parts[1]),
+          );
         }
       } catch (_) {}
     }
@@ -652,8 +843,8 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
     final initialParam = isCricket
         ? (targetFixture['overs']?.toString() ?? '20')
         : isFootball
-            ? (targetFixture['duration']?.toString() ?? '90')
-            : (targetFixture['quarterDuration']?.toString() ?? '10');
+        ? (targetFixture['duration']?.toString() ?? '90')
+        : (targetFixture['quarterDuration']?.toString() ?? '10');
 
     showDialog(
       context: context,
@@ -664,13 +855,20 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
 
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            final formattedDateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
-            final formattedTimeStr = '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}';
-            final formattedDisplayDate = DateFormat('MMM dd, yyyy').format(selectedDate);
+            final formattedDateStr = DateFormat(
+              'yyyy-MM-dd',
+            ).format(selectedDate);
+            final formattedTimeStr =
+                '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}';
+            final formattedDisplayDate = DateFormat(
+              'MMM dd, yyyy',
+            ).format(selectedDate);
             final formattedDisplayTime = selectedTime.format(context);
 
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
               title: Row(
                 children: [
                   const Icon(Icons.calendar_month, color: Color(0xFF1DB954)),
@@ -688,18 +886,26 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                   children: [
                     Text(
                       '${targetFixture['team1']} vs ${targetFixture['team2']}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black54),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Colors.black54,
+                      ),
                     ),
                     const SizedBox(height: 20),
                     const Text(
                       'Match Date',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: Colors.black87,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     InkWell(
                       onTap: () async {
                         final DateTime? picked = await showDatePicker(
-                           context: context,
+                          context: context,
                           initialDate: selectedDate,
                           firstDate: widget.tournament.startDate,
                           lastDate: widget.tournament.endDate,
@@ -711,7 +917,10 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                         }
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.black26),
                           borderRadius: BorderRadius.circular(12),
@@ -722,9 +931,16 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                           children: [
                             Text(
                               formattedDisplayDate,
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
                             ),
-                            const Icon(Icons.edit_calendar, color: Colors.black54, size: 18),
+                            const Icon(
+                              Icons.edit_calendar,
+                              color: Colors.black54,
+                              size: 18,
+                            ),
                           ],
                         ),
                       ),
@@ -732,7 +948,11 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     const SizedBox(height: 16),
                     const Text(
                       'Match Time',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: Colors.black87,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     InkWell(
@@ -748,7 +968,10 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                         }
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.black26),
                           borderRadius: BorderRadius.circular(12),
@@ -759,9 +982,16 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                           children: [
                             Text(
                               formattedDisplayTime,
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
                             ),
-                            const Icon(Icons.access_time, color: Colors.black54, size: 18),
+                            const Icon(
+                              Icons.access_time,
+                              color: Colors.black54,
+                              size: 18,
+                            ),
                           ],
                         ),
                       ),
@@ -770,7 +1000,11 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     if (isCricket) ...[
                       const Text(
                         'Number of Overs',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: Colors.black87,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       TextFormField(
@@ -778,14 +1012,23 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
                           hintText: 'Enter overs (e.g., 20)',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          prefixIcon: const Icon(Icons.sports_cricket, size: 18),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.sports_cricket,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ] else if (isFootball) ...[
                       const Text(
                         'Match Duration (Minutes)',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: Colors.black87,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       TextFormField(
@@ -793,14 +1036,20 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
                           hintText: 'Enter duration (e.g., 90)',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           prefixIcon: const Icon(Icons.timer, size: 18),
                         ),
                       ),
                     ] else if (isBasketball) ...[
                       const Text(
                         'Quarter Duration (Minutes)',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.black87),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: Colors.black87,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       TextFormField(
@@ -808,8 +1057,13 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
                           hintText: 'Enter quarter duration (e.g., 10)',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          prefixIcon: const Icon(Icons.sports_basketball, size: 18),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.sports_basketball,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ],
@@ -833,7 +1087,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     final customVal = int.tryParse(customValStr);
                     if (customVal == null || customVal <= 0) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please enter a valid positive number')),
+                        const SnackBar(
+                          content: Text('Please enter a valid positive number'),
+                        ),
                       );
                       return;
                     }
@@ -841,24 +1097,31 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     final formattedDate = formattedDateStr;
                     final formattedTime = formattedTimeStr;
 
-                    final List<Map<String, dynamic>> updatedFixtures = widget.tournament.fixtures.map((f) {
-                      final map = Map<String, dynamic>.from(f);
-                      if (map['matchNumber'] == targetFixture['matchNumber']) {
-                        map['date'] = formattedDate;
-                        map['time'] = formattedTime;
-                        if (isCricket) {
-                          map['overs'] = customVal;
-                        } else if (isFootball) {
-                          map['duration'] = customVal;
-                        } else if (isBasketball) {
-                          map['quarterDuration'] = customVal;
-                        }
-                      }
-                      return map;
-                    }).toList();
+                    final List<Map<String, dynamic>> updatedFixtures = widget
+                        .tournament
+                        .fixtures
+                        .map((f) {
+                          final map = Map<String, dynamic>.from(f);
+                          if (map['matchNumber'] ==
+                              targetFixture['matchNumber']) {
+                            map['date'] = formattedDate;
+                            map['time'] = formattedTime;
+                            if (isCricket) {
+                              map['overs'] = customVal;
+                            } else if (isFootball) {
+                              map['duration'] = customVal;
+                            } else if (isBasketball) {
+                              map['quarterDuration'] = customVal;
+                            }
+                          }
+                          return map;
+                        })
+                        .toList();
 
-                    final String team1Name = targetFixture['team1'] as String? ?? '';
-                    final String team2Name = targetFixture['team2'] as String? ?? '';
+                    final String team1Name =
+                        targetFixture['team1'] as String? ?? '';
+                    final String team2Name =
+                        targetFixture['team2'] as String? ?? '';
 
                     String? team1CaptainUid;
                     String? team2CaptainUid;
@@ -876,15 +1139,22 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     Navigator.pop(dialogContext);
 
                     try {
-                      await ref.read(tournamentRepositoryProvider).updateTournamentFixtures(
+                      await ref
+                          .read(tournamentRepositoryProvider)
+                          .updateTournamentFixtures(
                             widget.tournament.id,
                             updatedFixtures,
                           );
 
-                      final notificationsRepo = ref.read(notificationsRepositoryProvider);
-                      final displayDateFormatted = DateFormat('MMM dd, yyyy').format(selectedDate);
+                      final notificationsRepo = ref.read(
+                        notificationsRepositoryProvider,
+                      );
+                      final displayDateFormatted = DateFormat(
+                        'MMM dd, yyyy',
+                      ).format(selectedDate);
 
-                      if (team1CaptainUid != null && team1CaptainUid.isNotEmpty) {
+                      if (team1CaptainUid != null &&
+                          team1CaptainUid.isNotEmpty) {
                         await notificationsRepo.sendNotification(
                           NotificationEntity(
                             id: '',
@@ -913,13 +1183,19 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
 
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Match schedule updated successfully!')),
+                          const SnackBar(
+                            content: Text(
+                              'Match schedule updated successfully!',
+                            ),
+                          ),
                         );
                       }
                     } catch (e) {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error updating match schedule: $e')),
+                          SnackBar(
+                            content: Text('Error updating match schedule: $e'),
+                          ),
                         );
                       }
                     }
@@ -927,7 +1203,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1DB954),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: const Text('Save'),
                 ),
@@ -937,7 +1215,7 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
         );
       },
     );
-}
+  }
 
   Widget _buildConnector({
     required int rIndex,
@@ -958,11 +1236,7 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
           Positioned(
             left: 0,
             top: slotHeight / 2 - 1,
-            child: Container(
-              width: 30,
-              height: 2,
-              color: Colors.blue.shade300,
-            ),
+            child: Container(width: 30, height: 2, color: Colors.blue.shade300),
           ),
           // Vertical connector line
           Positioned(
@@ -978,18 +1252,18 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
           Positioned(
             left: 30,
             top: isUpper ? slotHeight - 1 : 0,
-            child: Container(
-              width: 30,
-              height: 2,
-              color: Colors.blue.shade300,
-            ),
+            child: Container(width: 30, height: 2, color: Colors.blue.shade300),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMatchCard(Map<String, dynamic> fixture, bool isHost, TournamentEntity t) {
+  Widget _buildMatchCard(
+    Map<String, dynamic> fixture,
+    bool isHost,
+    TournamentEntity t,
+  ) {
     final dateStr = fixture['date'] as String? ?? '';
     final timeStr = fixture['time'] as String? ?? '';
     final hasSchedule = dateStr.isNotEmpty && timeStr.isNotEmpty;
@@ -997,26 +1271,30 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
     if (hasSchedule) {
       try {
         final parsedDate = DateFormat('yyyy-MM-dd').parse(dateStr);
-        scheduleLabel = '${DateFormat('MMM dd').format(parsedDate)} at $timeStr';
+        scheduleLabel =
+            '${DateFormat('MMM dd').format(parsedDate)} at $timeStr';
       } catch (_) {
         scheduleLabel = '$dateStr $timeStr';
       }
       if (t.sport.toLowerCase() == 'cricket' && fixture['overs'] != null) {
         scheduleLabel += ' • ' + fixture['overs'].toString() + ' Overs';
-      } else if (t.sport.toLowerCase() == 'football' && fixture['duration'] != null) {
+      } else if (t.sport.toLowerCase() == 'football' &&
+          fixture['duration'] != null) {
         scheduleLabel += ' • ' + fixture['duration'].toString() + ' Mins';
-      } else if (t.sport.toLowerCase() == 'basketball' && fixture['quarterDuration'] != null) {
-        scheduleLabel += ' • 4 Qtrs x ' + fixture['quarterDuration'].toString() + 'M';
+      } else if (t.sport.toLowerCase() == 'basketball' &&
+          fixture['quarterDuration'] != null) {
+        scheduleLabel +=
+            ' • 4 Qtrs x ' + fixture['quarterDuration'].toString() + 'M';
       }
     }
 
     final liveScoreAsync = _isFootballTournament
         ? ref.watch(footballLiveScoreStreamProvider(t.id))
         : _isCricketTournament
-            ? ref.watch(cricketLiveScoreStreamProvider(t.id))
-            : _isBasketballTournament
-                ? ref.watch(basketballLiveScoreStreamProvider(t.id))
-                : const AsyncValue.data(null);
+        ? ref.watch(cricketLiveScoreStreamProvider(t.id))
+        : _isBasketballTournament
+        ? ref.watch(basketballLiveScoreStreamProvider(t.id))
+        : const AsyncValue.data(null);
 
     return GestureDetector(
       behavior: HitTestBehavior.deferToChild,
@@ -1035,7 +1313,7 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
               color: Colors.black12,
               blurRadius: 6,
               offset: Offset(0, 3),
-            )
+            ),
           ],
         ),
         child: Column(
@@ -1047,7 +1325,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: hasSchedule ? Colors.green.shade50 : Colors.blue.shade50,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(10),
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1057,14 +1337,18 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 11,
-                      color: hasSchedule ? Colors.green.shade800 : Colors.blue.shade800,
+                      color: hasSchedule
+                          ? Colors.green.shade800
+                          : Colors.blue.shade800,
                     ),
                   ),
                   if (isHost)
                     Icon(
                       Icons.calendar_today,
                       size: 12,
-                      color: hasSchedule ? Colors.green.shade600 : Colors.blue.shade400,
+                      color: hasSchedule
+                          ? Colors.green.shade600
+                          : Colors.blue.shade400,
                     ),
                 ],
               ),
@@ -1099,10 +1383,15 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
               ),
             ),
             // Live score snippet on card (compact)
-            if (_isFootballTournament || _isCricketTournament || _isBasketballTournament) ...[
+            if (_isFootballTournament ||
+                _isCricketTournament ||
+                _isBasketballTournament) ...[
               const Divider(height: 1, thickness: 1, color: Colors.black12),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 child: liveScoreAsync.when(
                   data: (score) {
                     if (score == null) {
@@ -1120,7 +1409,8 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                       );
                     }
 
-                    if (_isFootballTournament && score is FootballLiveScoreEntity) {
+                    if (_isFootballTournament &&
+                        score is FootballLiveScoreEntity) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -1131,14 +1421,22 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                                 child: Text(
                                   score.hostTeamName,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4.0,
+                                ),
                                 child: Text(
                                   '${score.hostTeamScore} - ${score.guestTeamScore}',
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                               Expanded(
@@ -1146,7 +1444,10 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                                   score.guestTeamName,
                                   textAlign: TextAlign.end,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
                             ],
@@ -1154,14 +1455,26 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              Text(score.matchStatus, style: TextStyle(fontSize: 11, color: Colors.green.shade700, fontWeight: FontWeight.w600)),
+                              Text(
+                                score.matchStatus,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.green.shade700,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               const Spacer(),
-                              if (score.minute != null) Text('Min ${score.minute}', style: const TextStyle(fontSize: 11)),
+                              if (score.minute != null)
+                                Text(
+                                  'Min ${score.minute}',
+                                  style: const TextStyle(fontSize: 11),
+                                ),
                             ],
                           ),
                         ],
                       );
-                    } else if (_isCricketTournament && score is CricketLiveScoreEntity) {
+                    } else if (_isCricketTournament &&
+                        score is CricketLiveScoreEntity) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -1172,14 +1485,22 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                                 child: Text(
                                   score.battingTeamName,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4.0,
+                                ),
                                 child: Text(
                                   '${score.runs}/${score.wickets}',
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                               Expanded(
@@ -1187,7 +1508,10 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                                   '(${score.overs}.${score.balls})',
                                   textAlign: TextAlign.end,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
                             ],
@@ -1195,21 +1519,32 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              Text(score.matchStatus, style: TextStyle(fontSize: 11, color: Colors.teal.shade700, fontWeight: FontWeight.w600)),
+                              Text(
+                                score.matchStatus,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.teal.shade700,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               const Spacer(),
                               Expanded(
                                 child: Text(
                                   'vs ${score.bowlingTeamName}',
                                   textAlign: TextAlign.end,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(fontSize: 10.5, color: Colors.grey.shade700),
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: Colors.grey.shade700,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ],
                       );
-                    } else if (_isBasketballTournament && score is BasketballLiveScoreEntity) {
+                    } else if (_isBasketballTournament &&
+                        score is BasketballLiveScoreEntity) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -1220,14 +1555,22 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                                 child: Text(
                                   score.hostTeamName,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4.0,
+                                ),
                                 child: Text(
                                   '${score.hostTeamScore} - ${score.guestTeamScore}',
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                               Expanded(
@@ -1235,7 +1578,10 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                                   score.guestTeamName,
                                   textAlign: TextAlign.end,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
                             ],
@@ -1243,9 +1589,21 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              Text(score.matchStatus, style: TextStyle(fontSize: 11, color: Colors.orange.shade700, fontWeight: FontWeight.w600)),
+                              Text(
+                                score.matchStatus,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.orange.shade700,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               const Spacer(),
-                              Text(score.currentQuarter == 5 ? 'OT' : 'Q${score.currentQuarter}', style: const TextStyle(fontSize: 11)),
+                              Text(
+                                score.currentQuarter == 5
+                                    ? 'OT'
+                                    : 'Q${score.currentQuarter}',
+                                style: const TextStyle(fontSize: 11),
+                              ),
                             ],
                           ),
                         ],
@@ -1253,8 +1611,20 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     }
                     return const SizedBox.shrink();
                   },
-                  loading: () => const SizedBox(height: 36, child: Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))),
-                  error: (err, st) => Text('Live score unavailable', style: TextStyle(color: Colors.red.shade600)),
+                  loading: () => const SizedBox(
+                    height: 36,
+                    child: Center(
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ),
+                  error: (err, st) => Text(
+                    'Live score unavailable',
+                    style: TextStyle(color: Colors.red.shade600),
+                  ),
                 ),
               ),
             ],
@@ -1262,7 +1632,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: hasSchedule ? Colors.green.shade50.withValues(alpha: 0.5) : Colors.grey.shade50,
+                color: hasSchedule
+                    ? Colors.green.shade50.withValues(alpha: 0.5)
+                    : Colors.grey.shade50,
                 borderRadius: (_isFootballTournament || _isCricketTournament)
                     ? null
                     : const BorderRadius.vertical(bottom: Radius.circular(10)),
@@ -1272,7 +1644,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                   Icon(
                     Icons.access_time,
                     size: 11,
-                    color: hasSchedule ? Colors.green.shade700 : Colors.grey.shade600,
+                    color: hasSchedule
+                        ? Colors.green.shade700
+                        : Colors.grey.shade600,
                   ),
                   const SizedBox(width: 4),
                   Expanded(
@@ -1283,7 +1657,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 10.5,
-                        color: hasSchedule ? Colors.green.shade700 : Colors.grey.shade600,
+                        color: hasSchedule
+                            ? Colors.green.shade700
+                            : Colors.grey.shade600,
                       ),
                     ),
                   ),
@@ -1291,7 +1667,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
               ),
             ),
             // Bottom Action Button
-            if (_isFootballTournament || _isCricketTournament || _isBasketballTournament) ...[
+            if (_isFootballTournament ||
+                _isCricketTournament ||
+                _isBasketballTournament) ...[
               const Divider(height: 1, thickness: 1, color: Colors.black12),
               if (isHost) ...[
                 // Host sees Update Live Score
@@ -1300,7 +1678,8 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     if (!_isLiveScoreUpdateEnabled(fixture)) {
                       final dateStr = fixture['date'] as String? ?? '';
                       final timeStr = fixture['time'] as String? ?? '';
-                      final scheduleLabel = (dateStr.isNotEmpty && timeStr.isNotEmpty)
+                      final scheduleLabel =
+                          (dateStr.isNotEmpty && timeStr.isNotEmpty)
                           ? '$dateStr $timeStr'
                           : 'Not Scheduled';
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -1321,8 +1700,8 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                         builder: (_) => _isFootballTournament
                             ? AddFootballLiveScoreScreen(tournament: t)
                             : _isCricketTournament
-                                ? AddCricketLiveScoreScreen(tournament: t)
-                                : AddBasketballLiveScoreScreen(tournament: t),
+                            ? AddCricketLiveScoreScreen(tournament: t)
+                            : AddBasketballLiveScoreScreen(tournament: t),
                       ),
                     );
                   },
@@ -1331,18 +1710,22 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     decoration: BoxDecoration(
                       color: _isLiveScoreUpdateEnabled(fixture)
                           ? (_isFootballTournament
-                              ? Colors.orange.shade700
-                              : _isCricketTournament
-                                  ? Colors.teal.shade700
-                                  : Colors.orange.shade800)
+                                ? Colors.orange.shade700
+                                : _isCricketTournament
+                                ? Colors.teal.shade700
+                                : Colors.orange.shade800)
                           : Colors.grey.shade300,
-                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
+                      borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(10),
+                      ),
                     ),
                     child: Center(
                       child: Text(
                         "Update Live Score",
                         style: TextStyle(
-                          color: _isLiveScoreUpdateEnabled(fixture) ? Colors.white : Colors.grey.shade600,
+                          color: _isLiveScoreUpdateEnabled(fixture)
+                              ? Colors.white
+                              : Colors.grey.shade600,
                           fontSize: 11.5,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1360,8 +1743,8 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                         builder: (_) => _isFootballTournament
                             ? ViewFootballLiveScoreScreen(tournament: t)
                             : _isCricketTournament
-                                ? ViewCricketLiveScoreScreen(tournament: t)
-                                : ViewBasketballLiveScoreScreen(tournament: t),
+                            ? ViewCricketLiveScoreScreen(tournament: t)
+                            : ViewBasketballLiveScoreScreen(tournament: t),
                       ),
                     );
                   },
@@ -1371,9 +1754,11 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                       color: _isFootballTournament
                           ? Colors.orange.shade50
                           : _isCricketTournament
-                              ? Colors.teal.shade50
-                              : Colors.orange.shade50,
-                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
+                          ? Colors.teal.shade50
+                          : Colors.orange.shade50,
+                      borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(10),
+                      ),
                     ),
                     child: Center(
                       child: Text(
@@ -1382,8 +1767,8 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                           color: _isFootballTournament
                               ? Colors.orange.shade800
                               : _isCricketTournament
-                                  ? Colors.teal.shade800
-                                  : Colors.orange.shade800,
+                              ? Colors.teal.shade800
+                              : Colors.orange.shade800,
                           fontSize: 11.5,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1399,7 +1784,12 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
     );
   }
 
-  Widget _buildLiveScoreCard(BuildContext context, bool isHost, TournamentEntity tournament, AsyncValue<FootballLiveScoreEntity?> liveScoreAsync) {
+  Widget _buildLiveScoreCard(
+    BuildContext context,
+    bool isHost,
+    TournamentEntity tournament,
+    AsyncValue<FootballLiveScoreEntity?> liveScoreAsync,
+  ) {
     return liveScoreAsync.when(
       data: (liveScore) {
         final score = liveScore;
@@ -1420,12 +1810,20 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                   children: [
                     const Text(
                       'Football Live Score',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: hasScore ? Colors.green.shade50 : Colors.orange.shade50,
+                        color: hasScore
+                            ? Colors.green.shade50
+                            : Colors.orange.shade50,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -1433,7 +1831,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: hasScore ? Colors.green.shade800 : Colors.orange.shade800,
+                          color: hasScore
+                              ? Colors.green.shade800
+                              : Colors.orange.shade800,
                         ),
                       ),
                     ),
@@ -1444,11 +1844,28 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(child: Text(score.hostTeamName, style: const TextStyle(fontWeight: FontWeight.w600))),
+                      Expanded(
+                        child: Text(
+                          score.hostTeamName,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
                       const SizedBox(width: 8),
-                      Text('${score.hostTeamScore} - ${score.guestTeamScore}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                      Text(
+                        '${score.hostTeamScore} - ${score.guestTeamScore}',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(score.guestTeamName, textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.w600))),
+                      Expanded(
+                        child: Text(
+                          score.guestTeamName,
+                          textAlign: TextAlign.end,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
                     ],
                   ),
                   if (score.minute != null) ...[
@@ -1459,9 +1876,13 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     Builder(
                       builder: (context) {
                         final rawFoulEvents = score.foulEvents;
-                        final formattedIncidents = rawFoulEvents.map((e) => _formatFootballIncident(e)).toList();
+                        final formattedIncidents = rawFoulEvents
+                            .map((e) => _formatFootballIncident(e))
+                            .toList();
                         final latestIncidents = formattedIncidents.length > 3
-                            ? formattedIncidents.sublist(formattedIncidents.length - 3)
+                            ? formattedIncidents.sublist(
+                                formattedIncidents.length - 3,
+                              )
                             : formattedIncidents;
                         return BroadcastTicker(
                           incidents: latestIncidents,
@@ -1469,7 +1890,7 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                           backgroundColor: const Color(0xFF1A1A1A),
                           badgeText: 'EVENT',
                         );
-                      }
+                      },
                     ),
                   ],
                 ] else ...[
@@ -1485,12 +1906,18 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     Expanded(
                       child: Builder(
                         builder: (context) {
-                          final anyEnabled = tournament.fixtures.any((f) => _isLiveScoreUpdateEnabled(f));
+                          final anyEnabled = tournament.fixtures.any(
+                            (f) => _isLiveScoreUpdateEnabled(f),
+                          );
                           final btnBgColor = isHost
-                              ? (anyEnabled ? Colors.orange.shade700 : Colors.grey.shade300)
+                              ? (anyEnabled
+                                    ? Colors.orange.shade700
+                                    : Colors.grey.shade300)
                               : Colors.orange.shade50;
                           final btnFgColor = isHost
-                              ? (anyEnabled ? Colors.white : Colors.grey.shade600)
+                              ? (anyEnabled
+                                    ? Colors.white
+                                    : Colors.grey.shade600)
                               : Colors.orange.shade800;
 
                           return ElevatedButton.icon(
@@ -1503,7 +1930,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                                 borderRadius: BorderRadius.circular(10),
                                 side: BorderSide(
                                   color: isHost
-                                      ? (anyEnabled ? Colors.orange.shade800 : Colors.grey.shade400)
+                                      ? (anyEnabled
+                                            ? Colors.orange.shade800
+                                            : Colors.grey.shade400)
                                       : Colors.orange.shade200,
                                   width: 1,
                                 ),
@@ -1527,15 +1956,21 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => isHost
-                                      ? AddFootballLiveScoreScreen(tournament: tournament)
-                                      : ViewFootballLiveScoreScreen(tournament: tournament),
+                                      ? AddFootballLiveScoreScreen(
+                                          tournament: tournament,
+                                        )
+                                      : ViewFootballLiveScoreScreen(
+                                          tournament: tournament,
+                                        ),
                                 ),
                               );
                             },
                             icon: Icon(isHost ? Icons.edit : Icons.visibility),
                             label: Text(
                               isHost ? 'Update Live Score' : 'View Live Score',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           );
                         },
@@ -1559,7 +1994,12 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
     );
   }
 
-  Widget _buildCricketLiveScoreCard(BuildContext context, bool isHost, TournamentEntity tournament, AsyncValue<CricketLiveScoreEntity?> liveScoreAsync) {
+  Widget _buildCricketLiveScoreCard(
+    BuildContext context,
+    bool isHost,
+    TournamentEntity tournament,
+    AsyncValue<CricketLiveScoreEntity?> liveScoreAsync,
+  ) {
     return liveScoreAsync.when(
       data: (liveScore) {
         final score = liveScore;
@@ -1580,12 +2020,20 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                   children: [
                     const Text(
                       'Cricket Live Score',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: hasScore ? Colors.teal.shade50 : Colors.orange.shade50,
+                        color: hasScore
+                            ? Colors.teal.shade50
+                            : Colors.orange.shade50,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -1593,7 +2041,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: hasScore ? Colors.teal.shade800 : Colors.orange.shade800,
+                          color: hasScore
+                              ? Colors.teal.shade800
+                              : Colors.orange.shade800,
                         ),
                       ),
                     ),
@@ -1608,11 +2058,19 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(score.battingTeamName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            Text(
+                              score.battingTeamName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                             const SizedBox(height: 4),
                             Text(
                               '${score.runs}/${score.wickets}',
-                              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         ),
@@ -1621,9 +2079,18 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text('Overs: ${score.overs}.${score.balls}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(
+                            'Overs: ${score.overs}.${score.balls}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           const SizedBox(height: 4),
-                          Text('vs ${score.bowlingTeamName}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                          Text(
+                            'vs ${score.bowlingTeamName}',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -1632,7 +2099,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     Builder(
                       builder: (context) {
                         final latestIncidents = score.incidents.length > 3
-                            ? score.incidents.sublist(score.incidents.length - 3)
+                            ? score.incidents.sublist(
+                                score.incidents.length - 3,
+                              )
                             : score.incidents;
                         return BroadcastTicker(
                           incidents: latestIncidents,
@@ -1640,7 +2109,7 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                           backgroundColor: const Color(0xFF0B1713),
                           badgeText: 'EVENT',
                         );
-                      }
+                      },
                     ),
                   ],
                 ] else ...[
@@ -1656,12 +2125,18 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     Expanded(
                       child: Builder(
                         builder: (context) {
-                          final anyEnabled = tournament.fixtures.any((f) => _isLiveScoreUpdateEnabled(f));
+                          final anyEnabled = tournament.fixtures.any(
+                            (f) => _isLiveScoreUpdateEnabled(f),
+                          );
                           final btnBgColor = isHost
-                              ? (anyEnabled ? Colors.teal.shade700 : Colors.grey.shade300)
+                              ? (anyEnabled
+                                    ? Colors.teal.shade700
+                                    : Colors.grey.shade300)
                               : Colors.teal.shade50;
                           final btnFgColor = isHost
-                              ? (anyEnabled ? Colors.white : Colors.grey.shade600)
+                              ? (anyEnabled
+                                    ? Colors.white
+                                    : Colors.grey.shade600)
                               : Colors.teal.shade800;
 
                           return ElevatedButton.icon(
@@ -1674,7 +2149,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                                 borderRadius: BorderRadius.circular(10),
                                 side: BorderSide(
                                   color: isHost
-                                      ? (anyEnabled ? Colors.teal.shade800 : Colors.grey.shade400)
+                                      ? (anyEnabled
+                                            ? Colors.teal.shade800
+                                            : Colors.grey.shade400)
                                       : Colors.teal.shade200,
                                   width: 1,
                                 ),
@@ -1698,15 +2175,21 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => isHost
-                                      ? AddCricketLiveScoreScreen(tournament: tournament)
-                                      : ViewCricketLiveScoreScreen(tournament: tournament),
+                                      ? AddCricketLiveScoreScreen(
+                                          tournament: tournament,
+                                        )
+                                      : ViewCricketLiveScoreScreen(
+                                          tournament: tournament,
+                                        ),
                                 ),
                               );
                             },
                             icon: Icon(isHost ? Icons.edit : Icons.visibility),
                             label: Text(
                               isHost ? 'Update Live Score' : 'View Live Score',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           );
                         },
@@ -1730,7 +2213,12 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
     );
   }
 
-  Widget _buildBasketballLiveScoreCard(BuildContext context, bool isHost, TournamentEntity tournament, AsyncValue<BasketballLiveScoreEntity?> liveScoreAsync) {
+  Widget _buildBasketballLiveScoreCard(
+    BuildContext context,
+    bool isHost,
+    TournamentEntity tournament,
+    AsyncValue<BasketballLiveScoreEntity?> liveScoreAsync,
+  ) {
     return liveScoreAsync.when(
       data: (liveScore) {
         final score = liveScore;
@@ -1751,12 +2239,20 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                   children: [
                     const Text(
                       'Basketball Live Score',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: hasScore ? Colors.orange.shade50 : Colors.orange.shade50,
+                        color: hasScore
+                            ? Colors.orange.shade50
+                            : Colors.orange.shade50,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -1764,7 +2260,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: hasScore ? Colors.orange.shade800 : Colors.orange.shade800,
+                          color: hasScore
+                              ? Colors.orange.shade800
+                              : Colors.orange.shade800,
                         ),
                       ),
                     ),
@@ -1781,19 +2279,29 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                           children: [
                             Text(
                               score.hostTeamName,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
                             ),
                             if (score.hostTeamFouls >= 5)
                               Container(
                                 margin: const EdgeInsets.only(top: 4),
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.red.shade800,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: const Text(
                                   'BONUS',
-                                  style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                           ],
@@ -1802,7 +2310,10 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                       const SizedBox(width: 8),
                       Text(
                         '${score.hostTeamScore} - ${score.guestTeamScore}',
-                        style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -1812,19 +2323,29 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                             Text(
                               score.guestTeamName,
                               textAlign: TextAlign.end,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
                             ),
                             if (score.guestTeamFouls >= 5)
                               Container(
                                 margin: const EdgeInsets.only(top: 4),
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.red.shade800,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: const Text(
                                   'BONUS',
-                                  style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                           ],
@@ -1838,20 +2359,33 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     children: [
                       Text(
                         'Quarter: ${score.currentQuarter == 5 ? "OT" : "Q" + score.currentQuarter.toString()}',
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
                       ),
                       if (score.timerAccumulatedSeconds != null) ...[
                         Builder(
                           builder: (context) {
-                            final elapsed = score.isTimerRunning && score.timerStartedAt != null
-                                ? (score.timerAccumulatedSeconds) + DateTime.now().difference(score.timerStartedAt!).inSeconds
+                            final elapsed =
+                                score.isTimerRunning &&
+                                    score.timerStartedAt != null
+                                ? (score.timerAccumulatedSeconds) +
+                                      DateTime.now()
+                                          .difference(score.timerStartedAt!)
+                                          .inSeconds
                                 : (score.timerAccumulatedSeconds);
                             final min = elapsed ~/ 60;
                             final sec = elapsed % 60;
-                            final timeStr = '${min.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
+                            final timeStr =
+                                '${min.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
                             return Text(
                               'Time: $timeStr',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.orange),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: Colors.orange,
+                              ),
                             );
                           },
                         ),
@@ -1862,7 +2396,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     Builder(
                       builder: (context) {
                         final latestIncidents = score.foulEvents.length > 3
-                            ? score.foulEvents.sublist(score.foulEvents.length - 3)
+                            ? score.foulEvents.sublist(
+                                score.foulEvents.length - 3,
+                              )
                             : score.foulEvents;
                         return BroadcastTicker(
                           incidents: latestIncidents,
@@ -1870,7 +2406,7 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                           backgroundColor: const Color(0xFF1E1E1E),
                           badgeText: 'PLAY',
                         );
-                      }
+                      },
                     ),
                   ],
                 ] else ...[
@@ -1886,12 +2422,18 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                     Expanded(
                       child: Builder(
                         builder: (context) {
-                          final anyEnabled = tournament.fixtures.any((f) => _isLiveScoreUpdateEnabled(f));
+                          final anyEnabled = tournament.fixtures.any(
+                            (f) => _isLiveScoreUpdateEnabled(f),
+                          );
                           final btnBgColor = isHost
-                              ? (anyEnabled ? Colors.orange.shade700 : Colors.grey.shade300)
+                              ? (anyEnabled
+                                    ? Colors.orange.shade700
+                                    : Colors.grey.shade300)
                               : Colors.orange.shade50;
                           final btnFgColor = isHost
-                              ? (anyEnabled ? Colors.white : Colors.grey.shade600)
+                              ? (anyEnabled
+                                    ? Colors.white
+                                    : Colors.grey.shade600)
                               : Colors.orange.shade800;
 
                           return ElevatedButton.icon(
@@ -1904,7 +2446,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                                 borderRadius: BorderRadius.circular(10),
                                 side: BorderSide(
                                   color: isHost
-                                      ? (anyEnabled ? Colors.orange.shade900 : Colors.grey.shade400)
+                                      ? (anyEnabled
+                                            ? Colors.orange.shade900
+                                            : Colors.grey.shade400)
                                       : Colors.orange.shade200,
                                   width: 1,
                                 ),
@@ -1928,15 +2472,21 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => isHost
-                                      ? AddBasketballLiveScoreScreen(tournament: tournament)
-                                      : ViewBasketballLiveScoreScreen(tournament: tournament),
+                                      ? AddBasketballLiveScoreScreen(
+                                          tournament: tournament,
+                                        )
+                                      : ViewBasketballLiveScoreScreen(
+                                          tournament: tournament,
+                                        ),
                                 ),
                               );
                             },
                             icon: Icon(isHost ? Icons.edit : Icons.visibility),
                             label: Text(
                               isHost ? 'Update Live Score' : 'View Live Score',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           );
                         },
@@ -1965,14 +2515,18 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
     final t = widget.tournament;
     final userProfile = ref.watch(userProfileProvider).value;
     final isHost = userProfile?.uid == t.hostUid;
-    final liveScoreAsync = _isFootballTournament ? ref.watch(footballLiveScoreStreamProvider(t.id)) : null;
-    final cricketLiveScoreAsync = _isCricketTournament ? ref.watch(cricketLiveScoreStreamProvider(t.id)) : null;
-    final basketballLiveScoreAsync = _isBasketballTournament ? ref.watch(basketballLiveScoreStreamProvider(t.id)) : null;
+    final liveScoreAsync = _isFootballTournament
+        ? ref.watch(footballLiveScoreStreamProvider(t.id))
+        : null;
+    final cricketLiveScoreAsync = _isCricketTournament
+        ? ref.watch(cricketLiveScoreStreamProvider(t.id))
+        : null;
+    final basketballLiveScoreAsync = _isBasketballTournament
+        ? ref.watch(basketballLiveScoreStreamProvider(t.id))
+        : null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(t.tournamentName),
-      ),
+      appBar: AppBar(title: Text(t.tournamentName)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -1981,14 +2535,28 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
             if (t.posterUrl.isNotEmpty)
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(t.posterUrl, width: double.infinity, height: 200, fit: BoxFit.cover),
+                child: Image.network(
+                  t.posterUrl,
+                  width: double.infinity,
+                  height: 200,
+                  fit: BoxFit.cover,
+                ),
               ),
             const SizedBox(height: 16),
-            Text(t.tournamentName, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Text(
+              t.tournamentName,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
-            Text("Hosted by ${t.hostName}", style: TextStyle(color: Colors.grey.shade600)),
+            Text(
+              "Hosted by ${t.hostName}",
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
             const SizedBox(height: 16),
-            const Text("Details", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              "Details",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.sports),
@@ -1996,7 +2564,9 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
             ),
             ListTile(
               leading: const Icon(Icons.calendar_today),
-              title: Text("${DateFormat('MMM dd').format(t.startDate)} - ${DateFormat('MMM dd, yyyy').format(t.endDate)}"),
+              title: Text(
+                "${DateFormat('MMM dd').format(t.startDate)} - ${DateFormat('MMM dd, yyyy').format(t.endDate)}",
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.location_on),
@@ -2018,16 +2588,30 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
             ],
             if (_isCricketTournament && cricketLiveScoreAsync != null) ...[
               const SizedBox(height: 8),
-              _buildCricketLiveScoreCard(context, isHost, t, cricketLiveScoreAsync),
+              _buildCricketLiveScoreCard(
+                context,
+                isHost,
+                t,
+                cricketLiveScoreAsync,
+              ),
             ],
-            if (_isBasketballTournament && basketballLiveScoreAsync != null) ...[
+            if (_isBasketballTournament &&
+                basketballLiveScoreAsync != null) ...[
               const SizedBox(height: 8),
-              _buildBasketballLiveScoreCard(context, isHost, t, basketballLiveScoreAsync),
+              _buildBasketballLiveScoreCard(
+                context,
+                isHost,
+                t,
+                basketballLiveScoreAsync,
+              ),
             ],
             const SizedBox(height: 16),
 
             // Teams Section
-            const Text("Registered Teams", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              "Registered Teams",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const Divider(),
             if (t.registeredTeams.isEmpty)
               const Padding(
@@ -2038,11 +2622,23 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
               ...t.registeredTeams.map((team) {
                 final players = (team['players'] as List<dynamic>?) ?? [];
                 return ExpansionTile(
-                  title: Text(team['teamName'] ?? 'Unknown Team', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text("Captain: ${team['captainName'] ?? 'Unknown'}"),
+                  title: Text(
+                    team['teamName'] ?? 'Unknown Team',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    "Captain: ${team['captainName'] ?? 'Unknown'}",
+                  ),
                   children: players.isEmpty
                       ? [const ListTile(title: Text("No players listed."))]
-                      : players.map((p) => ListTile(leading: const Icon(Icons.person, size: 20), title: Text(p.toString()))).toList(),
+                      : players
+                            .map(
+                              (p) => ListTile(
+                                leading: const Icon(Icons.person, size: 20),
+                                title: Text(p.toString()),
+                              ),
+                            )
+                            .toList(),
                 );
               }),
 
@@ -2053,13 +2649,16 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text("Fixtures Bracket", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text(
+                    "Fixtures Bracket",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                   if (isHost)
                     TextButton.icon(
                       onPressed: _editFixtures,
                       icon: const Icon(Icons.edit, size: 18),
                       label: const Text("Edit"),
-                    )
+                    ),
                 ],
               ),
               const Divider(),
@@ -2077,13 +2676,19 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                           1,
                       (rIndex) {
                         final roundMatches = t.fixtures
-                            .where((f) => (f['roundIndex'] as int? ?? 0) == rIndex)
+                            .where(
+                              (f) => (f['roundIndex'] as int? ?? 0) == rIndex,
+                            )
                             .toList();
                         final String roundName = roundMatches.isNotEmpty
-                            ? (roundMatches.first['roundName'] ?? 'Round ${rIndex + 1}')
+                            ? (roundMatches.first['roundName'] ??
+                                  'Round ${rIndex + 1}')
                             : 'Round ${rIndex + 1}';
 
-                        final maxRoundIndex = t.fixtures.fold<int>(0, (maxVal, element) {
+                        final maxRoundIndex = t.fixtures.fold<int>(0, (
+                          maxVal,
+                          element,
+                        ) {
                           final rIndex = element['roundIndex'] as int? ?? 0;
                           return rIndex > maxVal ? rIndex : maxVal;
                         });
@@ -2095,12 +2700,17 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 6,
+                                  ),
                                   margin: const EdgeInsets.only(bottom: 24),
                                   decoration: BoxDecoration(
                                     color: Colors.blue.shade50,
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.blue.shade200),
+                                    border: Border.all(
+                                      color: Colors.blue.shade200,
+                                    ),
                                   ),
                                   child: Text(
                                     roundName,
@@ -2113,8 +2723,10 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                                 ),
                                 ...roundMatches.asMap().entries.map((entry) {
                                   final int matchIdx = entry.key;
-                                  final Map<String, dynamic> fixture = entry.value;
-                                  final double slotHeight = 330.0 * (1 << rIndex);
+                                  final Map<String, dynamic> fixture =
+                                      entry.value;
+                                  final double slotHeight =
+                                      330.0 * (1 << rIndex);
 
                                   return SizedBox(
                                     width: 280,
@@ -2125,7 +2737,11 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                                         SizedBox(
                                           width: 220,
                                           child: Center(
-                                            child: _buildMatchCard(fixture, isHost, t),
+                                            child: _buildMatchCard(
+                                              fixture,
+                                              isHost,
+                                              t,
+                                            ),
                                           ),
                                         ),
                                         // Connector Line to next round
@@ -2159,13 +2775,17 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (_isFootballTournament || _isCricketTournament || _isBasketballTournament) ...[
+              if (_isFootballTournament ||
+                  _isCricketTournament ||
+                  _isBasketballTournament) ...[
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () {
                       if (isHost) {
-                        final anyEnabled = t.fixtures.any((f) => _isLiveScoreUpdateEnabled(f));
+                        final anyEnabled = t.fixtures.any(
+                          (f) => _isLiveScoreUpdateEnabled(f),
+                        );
                         if (!anyEnabled) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -2183,26 +2803,32 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
                         MaterialPageRoute(
                           builder: (_) => isHost
                               ? (_isFootballTournament
-                                  ? AddFootballLiveScoreScreen(tournament: t)
-                                  : _isCricketTournament
-                                      ? AddCricketLiveScoreScreen(tournament: t)
-                                      : AddBasketballLiveScoreScreen(tournament: t))
+                                    ? AddFootballLiveScoreScreen(tournament: t)
+                                    : _isCricketTournament
+                                    ? AddCricketLiveScoreScreen(tournament: t)
+                                    : AddBasketballLiveScoreScreen(
+                                        tournament: t,
+                                      ))
                               : (_isFootballTournament
-                                  ? ViewFootballLiveScoreScreen(tournament: t)
-                                  : _isCricketTournament
-                                      ? ViewCricketLiveScoreScreen(tournament: t)
-                                      : ViewBasketballLiveScoreScreen(tournament: t)),
+                                    ? ViewFootballLiveScoreScreen(tournament: t)
+                                    : _isCricketTournament
+                                    ? ViewCricketLiveScoreScreen(tournament: t)
+                                    : ViewBasketballLiveScoreScreen(
+                                        tournament: t,
+                                      )),
                         ),
                       );
                     },
                     icon: Icon(isHost ? Icons.edit : Icons.visibility),
-                    label: Text(isHost ? 'Update Live Score' : 'View Live Score'),
+                    label: Text(
+                      isHost ? 'Update Live Score' : 'View Live Score',
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _isFootballTournament
                           ? Colors.orange.shade700
                           : _isCricketTournament
-                              ? Colors.teal.shade700
-                              : Colors.orange.shade800,
+                          ? Colors.teal.shade700
+                          : Colors.orange.shade800,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
@@ -2212,48 +2838,73 @@ class _TournamentDetailsScreenState extends ConsumerState<TournamentDetailsScree
               ],
               isHost
                   ? (t.isFixtureGenerated
-                      ? Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: _isGeneratingFixtures ? null : _generateFixtures,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red.shade700,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                        ? Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: _isGeneratingFixtures
+                                      ? null
+                                      : _generateFixtures,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red.shade700,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                  ),
+                                  icon: _isGeneratingFixtures
+                                      ? const SizedBox.shrink()
+                                      : const Icon(Icons.refresh),
+                                  label: _isGeneratingFixtures
+                                      ? const CircularProgressIndicator(
+                                          color: Colors.white,
+                                        )
+                                      : const Text(
+                                          "Reset & Re-generate Bracket",
+                                        ),
                                 ),
-                                icon: _isGeneratingFixtures
-                                    ? const SizedBox.shrink()
-                                    : const Icon(Icons.refresh),
-                                label: _isGeneratingFixtures
-                                    ? const CircularProgressIndicator(color: Colors.white)
-                                    : const Text("Reset & Re-generate Bracket"),
                               ),
+                            ],
+                          )
+                        : ElevatedButton(
+                            onPressed: _isGeneratingFixtures
+                                ? null
+                                : _generateFixtures,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
-                          ],
-                        )
-                      : ElevatedButton(
-                          onPressed: _isGeneratingFixtures ? null : _generateFixtures,
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
-                          child: _isGeneratingFixtures ? const CircularProgressIndicator(color: Colors.white) : const Text("Set Fixtures Bracket"),
-                        ))
+                            child: _isGeneratingFixtures
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                : const Text("Set Fixtures Bracket"),
+                          ))
                   : (t.isFixtureGenerated
-                      ? const ElevatedButton(onPressed: null, child: Text("Registration Closed"))
-                      : t.registeredTeams.length >= t.maxTeams
-                          ? ElevatedButton(
-                              onPressed: null,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.grey.shade400,
-                                foregroundColor: Colors.white70,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                              ),
-                              child: const Text("Tournament Full"),
-                            )
-                          : ElevatedButton(
-                              onPressed: _showJoinDialog,
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
-                              child: const Text("Join Tournament"),
-                            )),
+                        ? const ElevatedButton(
+                            onPressed: null,
+                            child: Text("Registration Closed"),
+                          )
+                        : t.registeredTeams.length >= t.maxTeams
+                        ? ElevatedButton(
+                            onPressed: null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey.shade400,
+                              foregroundColor: Colors.white70,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: const Text("Tournament Full"),
+                          )
+                        : ElevatedButton(
+                            onPressed: _showJoinDialog,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: const Text("Join Tournament"),
+                          )),
             ],
           ),
         ),
@@ -2280,7 +2931,8 @@ class BroadcastTicker extends StatefulWidget {
   State<BroadcastTicker> createState() => _BroadcastTickerState();
 }
 
-class _BroadcastTickerState extends State<BroadcastTicker> with SingleTickerProviderStateMixin {
+class _BroadcastTickerState extends State<BroadcastTicker>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
   Timer? _cycleTimer;
@@ -2335,7 +2987,9 @@ class _BroadcastTickerState extends State<BroadcastTicker> with SingleTickerProv
   Widget build(BuildContext context) {
     if (widget.incidents.isEmpty) return const SizedBox.shrink();
 
-    final activeIndex = _currentIndex < widget.incidents.length ? _currentIndex : 0;
+    final activeIndex = _currentIndex < widget.incidents.length
+        ? _currentIndex
+        : 0;
     final String currentText = widget.incidents[activeIndex];
 
     return Container(
@@ -2406,19 +3060,25 @@ class _BroadcastTickerState extends State<BroadcastTicker> with SingleTickerProv
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 500),
                 transitionBuilder: (Widget child, Animation<double> animation) {
-                  final offsetAnimation = Tween<Offset>(
-                    begin: const Offset(0.0, 1.0),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
+                  final offsetAnimation =
+                      Tween<Offset>(
+                        begin: const Offset(0.0, 1.0),
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOutCubic,
+                        ),
+                      );
 
-                  final fadeAnimation = CurvedAnimation(parent: animation, curve: Curves.easeIn);
+                  final fadeAnimation = CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeIn,
+                  );
 
                   return SlideTransition(
                     position: offsetAnimation,
-                    child: FadeTransition(
-                      opacity: fadeAnimation,
-                      child: child,
-                    ),
+                    child: FadeTransition(opacity: fadeAnimation, child: child),
                   );
                 },
                 child: Align(
@@ -2466,5 +3126,6 @@ class _SlantedDividerPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _SlantedDividerPainter oldDelegate) => oldDelegate.color != color;
+  bool shouldRepaint(covariant _SlantedDividerPainter oldDelegate) =>
+      oldDelegate.color != color;
 }

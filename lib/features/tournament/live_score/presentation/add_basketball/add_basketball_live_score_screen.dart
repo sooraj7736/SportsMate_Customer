@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/theme/app_colors.dart';
 import '../../../../auth/presentation/auth_controller.dart';
 import '../../../domain/tournament_entity.dart';
 import '../../data/basketball_live_score_repository.dart';
@@ -41,7 +42,7 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
   String? _selectedEventTeam;
   String? _selectedEventPlayer;
 
-  // Live Timer states (counting down or up, basketball counts down or up, but let's count up to align with football/cricket elapsed seconds, or count down from quarter limit. Let's stick to elapsed quarter time for robust calculations)
+  // Live Timer states
   Timer? _matchTimer;
   bool _isTimerRunning = false;
   int _elapsedSeconds = 0;
@@ -248,7 +249,7 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
     final minutes = _elapsedSeconds ~/ 60;
     final seconds = _elapsedSeconds % 60;
     final timeStr = '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-    
+
     final normalizedPlay = customText.trim().isNotEmpty ? customText.trim() : _selectedPlayType;
     final eventText = '$quarterLabel $timeStr • $normalizedPlay • $teamName • $playerName';
 
@@ -327,10 +328,9 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
   }
 
   Widget _scoreControl({required String teamName, required int score, required int fouls, required bool isHost}) {
-    final primaryColor = isHost ? Colors.orange.shade800 : Colors.blue.shade900;
     final gradient = isHost
-        ? [Colors.orange.shade800, Colors.orange.shade600]
-        : [Colors.blue.shade800, Colors.blue.shade600];
+        ? [AppColors.basketballHostGradientTop, AppColors.basketballHostGradientBottom]
+        : [AppColors.basketballGuestGradientTop, AppColors.basketballGuestGradientBottom];
 
     final isBonus = fouls >= 5;
 
@@ -341,7 +341,7 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
           gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.white24),
-          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 8, offset: const Offset(0, 4))],
+          boxShadow: const [BoxShadow(color: AppColors.shadowMedium, blurRadius: 8, offset: Offset(0, 4))],
         ),
         child: Column(
           children: [
@@ -350,7 +350,7 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
+              style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark, fontSize: 13),
             ),
             const SizedBox(height: 6),
             AnimatedSwitcher(
@@ -358,7 +358,7 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
               child: Text(
                 score.toString(),
                 key: ValueKey('${teamName}_$score'),
-                style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.white),
+                style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: AppColors.textDark),
               ),
             ),
             const SizedBox(height: 6),
@@ -377,25 +377,32 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('FOULS', style: TextStyle(color: Colors.white70, fontSize: 9, fontWeight: FontWeight.bold)),
+                    const Text('FOULS', style: TextStyle(color: AppColors.subTextDark, fontSize: 9, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        Text('$fouls/5', style: TextStyle(color: isBonus ? Colors.redAccent : Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                        Text(
+                          '$fouls/5',
+                          style: TextStyle(
+                            color: isBonus ? Colors.redAccent : AppColors.textDark,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
                         if (isBonus) ...[
                           const SizedBox(width: 4),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                             decoration: BoxDecoration(
-                              color: Colors.red,
+                              color: AppColors.basketballBonusBadgeBg,
                               borderRadius: BorderRadius.circular(4),
                               boxShadow: [
-                                BoxShadow(color: Colors.red.withOpacity(0.5), blurRadius: 4, spreadRadius: 1),
+                                BoxShadow(color: Color.fromRGBO(244, 67, 54, 0.5), blurRadius: 4, spreadRadius: 1),
                               ],
                             ),
-                            child: const Text('BONUS', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                            child: const Text('BONUS', style: TextStyle(color: AppColors.textDark, fontSize: 8, fontWeight: FontWeight.bold)),
                           ),
-                        ]
+                        ],
                       ],
                     ),
                   ],
@@ -407,7 +414,7 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
-                        child: const Icon(Icons.remove, color: Colors.white, size: 12),
+                        child: const Icon(Icons.remove, color: AppColors.textDark, size: 12),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -416,7 +423,7 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
-                        child: const Icon(Icons.add, color: Colors.white, size: 12),
+                        child: const Icon(Icons.add, color: AppColors.textDark, size: 12),
                       ),
                     ),
                   ],
@@ -451,54 +458,52 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // ── Header Card (dark arena) ─────────────────────────────────────────
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.grey.shade900, Colors.black],
+              gradient: const LinearGradient(
+                colors: [AppColors.basketballHeaderGradientTop, AppColors.basketballHeaderGradientBottom],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.orange.shade800.withOpacity(0.3), width: 1.5),
-              boxShadow: [
+              border: Border.all(color: Color.fromRGBO(239, 108, 0, 0.3), width: 1.5),
+              boxShadow: const [
                 BoxShadow(
-                  color: Colors.orange.shade800.withOpacity(0.1),
+                  color: Color.fromRGBO(239, 108, 0, 0.1),
                   blurRadius: 18,
-                  offset: const Offset(0, 10),
-                )
+                  offset: Offset(0, 10),
+                ),
               ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Tournament name row
                 Row(
                   children: [
-                    const Icon(Icons.sports_basketball, color: Colors.orange),
+                    const Icon(Icons.sports_basketball, color: AppColors.basketballAccentOrange),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         widget.tournament.tournamentName,
-                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                        style: const TextStyle(color: AppColors.textDark, fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
-                      child: Text(_saveLabel, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                      decoration: BoxDecoration(color: AppColors.overlayWhiteLight, borderRadius: BorderRadius.circular(12)),
+                      child: Text(_saveLabel, style: const TextStyle(color: AppColors.subTextDark, fontSize: 11)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
+                // Score controls
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    _scoreControl(
-                      teamName: _hostTeamController.text,
-                      score: _hostScore,
-                      fouls: _hostFouls,
-                      isHost: true,
-                    ),
+                    _scoreControl(teamName: _hostTeamController.text, score: _hostScore, fouls: _hostFouls, isHost: true),
                     const SizedBox(width: 10),
                     Column(
                       children: [
@@ -510,55 +515,52 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
                         const SizedBox(height: 8),
                         Text(
                           _matchStatus,
-                          style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600, fontSize: 11),
+                          style: const TextStyle(color: AppColors.subTextDark, fontWeight: FontWeight.w600, fontSize: 11),
                         ),
                       ],
                     ),
                     const SizedBox(width: 10),
-                    _scoreControl(
-                      teamName: _guestTeamController.text,
-                      score: _guestScore,
-                      fouls: _guestFouls,
-                      isHost: false,
-                    ),
+                    _scoreControl(teamName: _guestTeamController.text, score: _guestScore, fouls: _guestFouls, isHost: false),
                   ],
                 ),
                 const SizedBox(height: 16),
+                // Timer header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.timer_outlined, color: Colors.white70, size: 18),
+                        const Icon(Icons.timer_outlined, color: AppColors.subTextDark, size: 18),
                         const SizedBox(width: 6),
                         Text(
                           _isTimerRunning ? 'Clock Ticking' : 'Clock Paused',
-                          style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 12),
+                          style: const TextStyle(color: AppColors.subTextDark, fontWeight: FontWeight.bold, fontSize: 12),
                         ),
                       ],
                     ),
                     Text(
                       'Quarter Limit: $quarterLimit Mins',
-                      style: const TextStyle(color: Colors.orangeAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                      style: const TextStyle(color: AppColors.basketballClockGlow, fontSize: 11, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
+                // Progress bar
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: (_elapsedSeconds / (quarterLimit * 60)).clamp(0.0, 1.0),
                     backgroundColor: Colors.white10,
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.orangeAccent),
+                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.basketballClockGlow),
                     minHeight: 4,
                   ),
                 ),
                 const SizedBox(height: 14),
-                // Side-by-Side controls
+                // Timer controls + LED clock
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Left Column: Controls (Start / Pause, Replay, Adjustments)
+                    // Left: play/pause + adjustments
                     Expanded(
                       flex: 3,
                       child: Column(
@@ -568,18 +570,18 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
                             onPressed: _toggleTimer,
                             icon: Icon(
                               _isTimerRunning ? Icons.pause : Icons.play_arrow,
-                              color: Colors.black,
+                              color: AppColors.deepPitch,
                               size: 18,
                             ),
                             label: Text(
                               _isTimerRunning
                                   ? 'PAUSE CLOCK'
                                   : (_elapsedSeconds == 0 ? 'START QUARTER' : 'RESUME CLOCK'),
-                              style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5, fontSize: 11, color: Colors.black),
+                              style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5, fontSize: 11, color: AppColors.deepPitch),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: _isTimerRunning ? Colors.redAccent : Colors.orangeAccent,
-                              foregroundColor: Colors.black,
+                              backgroundColor: _isTimerRunning ? AppColors.basketballTimerRunningBg : AppColors.basketballTimerStoppedBg,
+                              foregroundColor: AppColors.deepPitch,
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
@@ -589,17 +591,17 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.replay, color: Colors.white, size: 18),
+                                icon: const Icon(Icons.replay, color: AppColors.textDark, size: 18),
                                 tooltip: 'Reset Qtr Clock',
                                 onPressed: () => _adjustTimer(0),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.remove, color: Colors.white, size: 16),
+                                icon: const Icon(Icons.remove, color: AppColors.textDark, size: 16),
                                 tooltip: '-1 Min',
                                 onPressed: () => _adjustTimer(_elapsedSeconds - 60),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.add, color: Colors.white, size: 16),
+                                icon: const Icon(Icons.add, color: AppColors.textDark, size: 16),
                                 tooltip: '+1 Min',
                                 onPressed: () => _adjustTimer(_elapsedSeconds + 60),
                               ),
@@ -609,52 +611,47 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // Right Column: Live Orange Monospace LED Timer Clock Box
+                    // Right: LED clock
                     Expanded(
                       flex: 2,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: double.infinity,
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.orangeAccent.withOpacity(0.5), width: 1.5),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.orangeAccent.withOpacity(0.2),
-                                  blurRadius: 10,
-                                  spreadRadius: 2,
-                                ),
-                              ],
+                      child: Container(
+                        width: double.infinity,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Color.fromRGBO(255, 171, 64, 0.5), width: 1.5),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color.fromRGBO(255, 171, 64, 0.2),
+                              blurRadius: 10,
+                              spreadRadius: 2,
                             ),
-                            child: Text(
-                              timeStr,
-                              style: const TextStyle(
-                                color: Colors.orangeAccent,
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Courier',
-                                letterSpacing: 2,
-                              ),
-                            ),
+                          ],
+                        ),
+                        child: Text(
+                          timeStr,
+                          style: const TextStyle(
+                            color: AppColors.basketballClockGlow,
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Courier',
+                            letterSpacing: 2,
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ],
                 ),
                 const Divider(color: Colors.white24, height: 24),
-                // Quarter Control Selector Buttons
+                // Quarter selector
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
                       'Match Quarter',
-                      style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: AppColors.subTextDark, fontSize: 11, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -668,8 +665,8 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
                             padding: const EdgeInsets.symmetric(horizontal: 2),
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: isSelected ? Colors.orange.shade800 : Colors.white10,
-                                foregroundColor: Colors.white,
+                                backgroundColor: isSelected ? AppColors.basketballQuarterSelectedBg : AppColors.basketballQuarterDefaultBg,
+                                foregroundColor: AppColors.textDark,
                                 padding: EdgeInsets.zero,
                                 textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -682,18 +679,18 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
                       }),
                     ),
                   ],
-                )
+                ),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          // Basketball Scoring Event Creator
+          // ── Scoring Event Creator ────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.basketballCardBg,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: AppColors.basketballCardBorder),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -773,26 +770,26 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange.shade800,
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.basketballLogButtonBg,
+                      foregroundColor: AppColors.textDark,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () => _logIncident(_customIncidentController.text),
                     child: const Text('LOG PLAY & AUTOMATE SCORE', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
-                )
+                ),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          // Game Logs List
+          // ── Game Logs List ───────────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.basketballCardBg,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: AppColors.basketballCardBorder),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -803,7 +800,10 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Center(
-                      child: Text('No plays logged yet. Use the panel above to record incidents.', style: TextStyle(color: Colors.black45, fontSize: 12)),
+                      child: Text(
+                        'No plays logged yet. Use the panel above to record incidents.',
+                        style: TextStyle(color: Colors.black45, fontSize: 12),
+                      ),
                     ),
                   )
                 else
@@ -819,23 +819,23 @@ class _AddBasketballLiveScoreScreenState extends ConsumerState<AddBasketballLive
                         contentPadding: EdgeInsets.zero,
                         title: Text(item, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87, fontSize: 13)),
                         trailing: IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                          icon: const Icon(Icons.delete_outline, color: AppColors.errorRed, size: 18),
                           onPressed: () => _removeIncident(item),
                         ),
                       );
                     },
-                  )
+                  ),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          // Match notes & Status
+          // ── Match Control Panel ──────────────────────────────────────────────
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.basketballCardBg,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: AppColors.basketballCardBorder),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -895,7 +895,7 @@ class _ScoreButton extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(8),
-          child: Icon(icon, color: Colors.white, size: 16),
+          child: Icon(icon, color: AppColors.textDark, size: 16),
         ),
       ),
     );

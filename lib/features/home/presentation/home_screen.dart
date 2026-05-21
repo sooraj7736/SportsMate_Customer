@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sportsmate/core/theme/app_colors.dart';
+import 'package:sportsmate/core/providers/common_providers.dart';
 import 'package:sportsmate/features/auth/presentation/auth_controller.dart';
 import 'package:sportsmate/features/home/data/feedrepository.dart';
 import 'package:sportsmate/features/AddFeed/domain/AddFeed_entity.dart';
@@ -50,6 +52,19 @@ class _HomeFeedViewState extends ConsumerState<HomeFeedView> {
           ),
         ),
         actions: [
+          // Theme toggle: tap to switch dark ↔ light
+          Consumer(builder: (context, ref, _) {
+            final themeMode = ref.watch(themeModeProvider);
+            final isDark = themeMode == ThemeMode.dark ||
+                (themeMode == ThemeMode.system &&
+                    MediaQuery.of(context).platformBrightness == Brightness.dark);
+            return IconButton(
+              icon: Icon(isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                  color: Theme.of(context).iconTheme.color),
+              tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+              onPressed: () => ref.read(themeModeProvider.notifier).toggleTheme(),
+            );
+          }),
           IconButton(
             icon: Icon(Icons.notifications_none, color: Theme.of(context).iconTheme.color),
             onPressed: () {
@@ -158,24 +173,16 @@ class _HomeFeedViewState extends ConsumerState<HomeFeedView> {
     final avatarUrl = userProfile?.profilePic;
     final displayName = userProfile?.username ?? "Friend";
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
+        boxShadow: const [
+          BoxShadow(color: Color(0x0A000000), blurRadius: 8, offset: Offset(0, 3)),
         ],
-        border: Border.all(
-          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-          width: 0.8,
-        ),
+        border: Border.all(color: cs.outline, width: 0.8),
       ),
       child: InkWell(
         onTap: () {
@@ -206,13 +213,13 @@ class _HomeFeedViewState extends ConsumerState<HomeFeedView> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.grey.shade900 : Colors.grey.shade100,
+                        color: cs.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: Text(
                         "What's on your mind, $displayName?",
                         style: TextStyle(
-                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+                          color: cs.onSurfaceVariant,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -222,10 +229,7 @@ class _HomeFeedViewState extends ConsumerState<HomeFeedView> {
                 ],
               ),
               const SizedBox(height: 12),
-              Divider(
-                color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-                height: 1,
-              ),
+              Divider(color: cs.outline, height: 1),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -272,15 +276,16 @@ class _HomeFeedViewState extends ConsumerState<HomeFeedView> {
   }
 
   Widget _buildEmptyState() {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.feed_outlined, size: 60, color: Colors.grey.shade400),
+          Icon(Icons.feed_outlined, size: 60, color: cs.onSurfaceVariant),
           const SizedBox(height: 16),
           Text(
-            "No feeds yet. Be the first to post!",
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+            'No feeds yet. Be the first to post!',
+            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 16),
           ),
         ],
       ),
@@ -301,17 +306,15 @@ class AdItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
+        border: Border.all(color: cs.outline),
+        boxShadow: const [
+          BoxShadow(color: Color(0x0D000000), blurRadius: 10, offset: Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -321,19 +324,19 @@ class AdItem extends StatelessWidget {
             padding: const EdgeInsets.all(12.0),
             child: Row(
               children: [
-                const Icon(Icons.campaign, color: Colors.blue, size: 20),
+                Icon(Icons.campaign, color: cs.primary, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  "Sponsored",
+                  'Sponsored',
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: cs.onSurfaceVariant,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                     letterSpacing: 0.5,
                   ),
                 ),
                 const Spacer(),
-                const Icon(Icons.more_horiz, color: Colors.grey),
+                Icon(Icons.more_horiz, color: cs.onSurfaceVariant),
               ],
             ),
           ),
@@ -348,8 +351,8 @@ class AdItem extends StatelessWidget {
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
                     height: 200,
-                    color: Colors.grey.shade100,
-                    child: const Icon(Icons.broken_image, color: Colors.grey),
+                    color: cs.surfaceContainerHighest,
+                    child: Icon(Icons.broken_image, color: cs.onSurfaceVariant),
                   ),
                 ),
               ),
@@ -361,33 +364,20 @@ class AdItem extends StatelessWidget {
               children: [
                 Text(
                   ad.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   ad.description,
-                  style: TextStyle(
-                    color: Colors.grey.shade800,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
+                  // ElevatedButton uses AppTheme.elevatedButtonTheme automatically
                   child: ElevatedButton(
                     onPressed: _launchUrl,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text("Learn More", style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text('Learn More', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -431,9 +421,9 @@ class _FeedItemState extends ConsumerState<FeedItem> {
           minChildSize: 0.5,
           maxChildSize: 0.95,
           builder: (_, scrollController) => Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
             child: Column(
@@ -443,13 +433,13 @@ class _FeedItemState extends ConsumerState<FeedItem> {
                   height: 4,
                   margin: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: Theme.of(context).colorScheme.outline,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const Text(
-                  "Comments",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                Text(
+                  'Comments',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Theme.of(context).colorScheme.onSurface),
                 ),
                 const Divider(),
                 Expanded(
@@ -464,7 +454,6 @@ class _FeedItemState extends ConsumerState<FeedItem> {
                         return const Center(child: Text("No comments yet."));
                       }
                       
-                      // Separate top-level comments and replies
                       final topLevelComments = allComments.where((c) => c.parentCommentId == null).toList();
                       
                       return ListView.builder(
@@ -482,15 +471,15 @@ class _FeedItemState extends ConsumerState<FeedItem> {
                                   radius: 18,
                                   backgroundImage: NetworkImage(comment.userProfileImage),
                                 ),
-                                title: Text(comment.username, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                title: Text(comment.username, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Theme.of(context).colorScheme.onSurface)),
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(comment.text, style: const TextStyle(color: Colors.black87)),
+                                    Text(comment.text, style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                                     const SizedBox(height: 4),
                                     Text(
                                       DateFormat('MMM d, h:mm a').format(comment.date),
-                                      style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                      style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                     ),
                                   ],
                                 ),
@@ -504,7 +493,6 @@ class _FeedItemState extends ConsumerState<FeedItem> {
                                   },
                                 ),
                               ),
-                              // Display replies
                               ...replies.map((reply) => Padding(
                                 padding: const EdgeInsets.only(left: 48.0),
                                 child: ListTile(
@@ -512,15 +500,15 @@ class _FeedItemState extends ConsumerState<FeedItem> {
                                     radius: 14,
                                     backgroundImage: NetworkImage(reply.userProfileImage),
                                   ),
-                                  title: Text(reply.username, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                  title: Text(reply.username, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Theme.of(context).colorScheme.onSurface)),
                                   subtitle: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(reply.text, style: const TextStyle(color: Colors.black87, fontSize: 13)),
+                                      Text(reply.text, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13)),
                                       const SizedBox(height: 4),
                                       Text(
                                         DateFormat('MMM d, h:mm a').format(reply.date),
-                                        style: const TextStyle(fontSize: 9, color: Colors.grey),
+                                        style: TextStyle(fontSize: 9, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                       ),
                                     ],
                                   ),
@@ -536,17 +524,18 @@ class _FeedItemState extends ConsumerState<FeedItem> {
                 if (replyingTo != null)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    color: Colors.grey.shade100,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     child: Row(
                       children: [
-                        Text("Replying to @${replyingTo!.username}", style: const TextStyle(fontSize: 12, color: Colors.blue)),
+                        Text("Replying to @${replyingTo!.username}",
+                            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary)),
                         const Spacer(),
                         GestureDetector(
                           onTap: () => setSheetState(() {
                             replyingTo = null;
                             commentController.clear();
                           }),
-                          child: const Icon(Icons.close, size: 16, color: Colors.grey),
+                          child: Icon(Icons.close, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -565,14 +554,15 @@ class _FeedItemState extends ConsumerState<FeedItem> {
                         child: TextField(
                           controller: commentController,
                           autofocus: replyingTo != null,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             hintText: "Add a comment...",
                             border: InputBorder.none,
+                            hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           ),
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.send, color: Colors.blue),
+                        icon: Icon(Icons.send, color: Theme.of(context).colorScheme.primary),
                         onPressed: () async {
                           if (commentController.text.trim().isEmpty) return;
                           final user = ref.read(userProfileProvider).value;
@@ -619,9 +609,9 @@ class _FeedItemState extends ConsumerState<FeedItem> {
           minChildSize: 0.4,
           maxChildSize: 0.9,
           builder: (_, scrollController) => Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Column(
               children: [
@@ -630,7 +620,7 @@ class _FeedItemState extends ConsumerState<FeedItem> {
                   height: 4,
                   margin: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: Theme.of(context).colorScheme.outline,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -639,7 +629,7 @@ class _FeedItemState extends ConsumerState<FeedItem> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Share Post", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                      Text("Share Post", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Theme.of(context).colorScheme.onSurface)),
                       TextButton.icon(
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: "Check out this post on NearPlay: ${widget.feed.id}"));
@@ -659,14 +649,11 @@ class _FeedItemState extends ConsumerState<FeedItem> {
                   child: TextField(
                     onChanged: (val) => setSheetState(() => searchQuery = val),
                     decoration: InputDecoration(
-                      hintText: "Search friends...",
+                      hintText: 'Search friends...',
                       prefixIcon: const Icon(Icons.search),
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       filled: true,
-                      fillColor: Colors.grey.shade100,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                     ),
                   ),
                 ),
@@ -689,8 +676,8 @@ class _FeedItemState extends ConsumerState<FeedItem> {
                             leading: CircleAvatar(
                               backgroundImage: NetworkImage(athlete.profilePic ?? 'https://i.pravatar.cc/150?u=${athlete.uid}'),
                             ),
-                            title: Text(athlete.name),
-                            subtitle: Text("@${athlete.username}"),
+                            title: Text(athlete.name, style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                            subtitle: Text("@${athlete.username}", style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                             trailing: ElevatedButton(
                               onPressed: () async {
                                 final user = ref.read(userProfileProvider).value;
@@ -736,26 +723,19 @@ class _FeedItemState extends ConsumerState<FeedItem> {
     final userProfile = ref.watch(userProfileProvider).value;
     final isLiked = userProfile != null && widget.feed.likes.contains(userProfile.uid);
     
-    // Set local state if not manually updated
     _localIsLiked = isLiked;
     _localLikeCount = widget.feed.likes.length;
 
+    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: cs.surface,
+        border: Border(bottom: BorderSide(color: cs.outline, width: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: Row(
@@ -788,15 +768,16 @@ class _FeedItemState extends ConsumerState<FeedItem> {
                             children: [
                               Text(
                                 widget.feed.username,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
+                                  color: cs.onSurface,
                                 ),
                               ),
                               Text(
                                 DateFormat('MMM d • h:mm a').format(widget.feed.date),
                                 style: TextStyle(
-                                  color: Colors.grey.shade500,
+                                  color: cs.onSurfaceVariant,
                                   fontSize: 11,
                                 ),
                               ),
@@ -808,27 +789,25 @@ class _FeedItemState extends ConsumerState<FeedItem> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.more_vert, size: 20, color: Colors.grey),
+                  icon: Icon(Icons.more_vert, size: 20, color: cs.onSurfaceVariant),
                   onPressed: () {},
                 ),
               ],
             ),
           ),
-          // Description
           if (widget.feed.description.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 4.0),
               child: Text(
                 widget.feed.description,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   height: 1.5,
-                  color: Colors.black87,
+                  color: cs.onSurface,
                 ),
               ),
             ),
           const SizedBox(height: 8),
-          // Media
           if (widget.feed.mediaUrl.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 0),
@@ -839,8 +818,8 @@ class _FeedItemState extends ConsumerState<FeedItem> {
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Container(
                         height: 200,
-                        color: Colors.grey.shade200,
-                        child: const Icon(Icons.broken_image, color: Colors.grey),
+                        color: cs.surfaceContainerHighest,
+                        child: Icon(Icons.broken_image, color: cs.onSurfaceVariant),
                       ),
                     )
                   : Image.network(
@@ -869,29 +848,29 @@ class _FeedItemState extends ConsumerState<FeedItem> {
                   child: _InteractionIcon(
                     icon: _localIsLiked ? Icons.favorite : Icons.favorite_border,
                     count: _localLikeCount.toString(),
-                    color: _localIsLiked ? Colors.red : Colors.grey.shade700,
+                    color: _localIsLiked ? AppColors.semanticError : cs.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(width: 20),
                 GestureDetector(
                   onTap: () => _showComments(context),
-                  child: const _InteractionIcon(
+                  child: _InteractionIcon(
                     icon: Icons.chat_bubble_outline,
-                    count: "...", // Fetching count asynchronously is better but for now ...
-                    color: Colors.grey,
+                    count: '...',
+                    color: cs.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(width: 20),
                 GestureDetector(
                   onTap: () => _showShareSheet(context),
-                  child: const _InteractionIcon(
+                  child: _InteractionIcon(
                     icon: Icons.share_outlined,
-                    count: "",
-                    color: Colors.grey,
+                    count: '',
+                    color: cs.onSurfaceVariant,
                   ),
                 ),
                 const Spacer(),
-                Icon(Icons.bookmark_border, color: Colors.grey.shade600),
+                Icon(Icons.bookmark_border, color: cs.onSurfaceVariant),
               ],
             ),
           ),
@@ -915,16 +894,17 @@ class _InteractionIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final secondary = Theme.of(context).colorScheme.onSurfaceVariant;
     return Row(
       children: [
         Icon(icon, size: 24, color: color),
-        if (count.isNotEmpty && count != "0")
+        if (count.isNotEmpty && count != '0')
           Padding(
             padding: const EdgeInsets.only(left: 6.0),
             child: Text(
               count,
               style: TextStyle(
-                color: Colors.grey.shade700,
+                color: secondary,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
@@ -961,65 +941,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedColor = Theme.of(context).primaryColor;
-    
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
         children: _pages,
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 10,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: selectedColor,
-          unselectedItemColor: Colors.grey.shade500,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
-          backgroundColor: Colors.white,
-          elevation: 0,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.sports_soccer_outlined),
-              activeIcon: Icon(Icons.sports_soccer),
-              label: 'Games',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.emoji_events_outlined),
-              activeIcon: Icon(Icons.emoji_events),
-              label: 'Tournaments',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.people_outline),
-              activeIcon: Icon(Icons.people),
-              label: 'Friends',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
-        ),
+      bottomNavigationBar: BottomNavigationBar(
+        // Colors come from AppTheme.bottomNavigationBarTheme
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.sports_soccer_outlined),
+            activeIcon: Icon(Icons.sports_soccer),
+            label: 'Games',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.emoji_events_outlined),
+            activeIcon: Icon(Icons.emoji_events),
+            label: 'Tournaments',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people_outline),
+            activeIcon: Icon(Icons.people),
+            label: 'Friends',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
       ),
     );
   }

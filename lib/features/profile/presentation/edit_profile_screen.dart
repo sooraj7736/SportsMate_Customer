@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:sportsmate/core/providers/common_providers.dart';
+import 'package:sportsmate/core/theme/app_colors.dart';
 import 'package:sportsmate/features/auth/presentation/auth_controller.dart';
 import 'package:sportsmate/features/sports/data/sports_catalog.dart';
 import '../domain/athlete_entity.dart';
@@ -128,22 +130,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final primaryColor = theme.primaryColor;
+    final cs = theme.colorScheme;
+    final primaryColor = cs.primary;
     final sportsAsync = ref.watch(sportsCatalogProvider);
     final availableSports = sportsAsync.asData?.value ?? const [];
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Edit Profile",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('Edit Profile', style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0.5,
-        backgroundColor: theme.appBarTheme.backgroundColor,
       ),
-      backgroundColor: theme.scaffoldBackgroundColor,
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: primaryColor))
+          ? Center(child: CircularProgressIndicator(color: cs.primary))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20.0),
               child: Form(
@@ -158,10 +156,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 4),
+                              border: Border.all(color: cs.outline, width: 4),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: AppColors.shadowMedium,
                                   blurRadius: 10,
                                   offset: const Offset(0, 5),
                                 ),
@@ -190,7 +188,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                 decoration: BoxDecoration(
                                   color: primaryColor,
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2),
+                                  border: Border.all(color: cs.outline, width: 2),
                                 ),
                                 child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
                               ),
@@ -203,8 +201,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                     // Display Name Field
                     Text(
-                      "Display Name",
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
+                    'Display Name',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: cs.onSurfaceVariant),
                     ),
                     const SizedBox(height: 6),
                     TextFormField(
@@ -214,7 +212,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         hintText: "Enter your full name",
                         prefixIcon: const Icon(Icons.person_outline),
                         filled: true,
-                        fillColor: theme.brightness == Brightness.light ? Colors.grey.shade100 : Colors.grey.shade900,
+                        fillColor: cs.surfaceContainerHighest,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -226,8 +224,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                     // Username Field
                     Text(
-                      "Username",
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
+                    'Username',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: cs.onSurfaceVariant),
                     ),
                     const SizedBox(height: 6),
                     TextFormField(
@@ -260,7 +258,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             : null,
                         errorText: _usernameError,
                         filled: true,
-                        fillColor: theme.brightness == Brightness.light ? Colors.grey.shade100 : Colors.grey.shade900,
+                        fillColor: cs.surfaceContainerHighest,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -272,8 +270,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                     // Skill Level Dropdown
                     Text(
-                      "Skill Level",
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
+                    'Skill Level',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: cs.onSurfaceVariant),
                     ),
                     const SizedBox(height: 6),
                     DropdownButtonFormField<String>(
@@ -292,7 +290,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.trending_up),
                         filled: true,
-                        fillColor: theme.brightness == Brightness.light ? Colors.grey.shade100 : Colors.grey.shade900,
+                        fillColor: cs.surfaceContainerHighest,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -304,8 +302,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                     // Favorite Sports Chips
                     Text(
-                      "Favorite Sports",
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
+                    'Favorite Sports',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: cs.onSurfaceVariant),
                     ),
                     const SizedBox(height: 8),
                     if (sportsAsync.isLoading && availableSports.isEmpty)
@@ -345,8 +343,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               color: isSelected ? primaryColor : theme.textTheme.bodyLarge?.color,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                             ),
-                            backgroundColor:
-                                theme.brightness == Brightness.light ? Colors.grey.shade100 : Colors.grey.shade900,
+                            backgroundColor: cs.surfaceContainerHighest,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                               side: BorderSide(
@@ -356,6 +353,35 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           );
                         }).toList(),
                       ),
+                    const SizedBox(height: 24),
+                    // ── Theme Toggle ────────────────────────────────────────
+                    Consumer(builder: (context, ref, _) {
+                      final themeMode = ref.watch(themeModeProvider);
+                      final isDark = themeMode == ThemeMode.dark ||
+                          (themeMode == ThemeMode.system &&
+                              MediaQuery.of(context).platformBrightness == Brightness.dark);
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: cs.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: cs.outline),
+                        ),
+                        child: SwitchListTile(
+                          title: Text('Dark Mode',
+                              style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface)),
+                          subtitle: Text(isDark ? 'Currently using dark theme' : 'Currently using light theme',
+                              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
+                          secondary: Icon(isDark ? Icons.dark_mode : Icons.light_mode,
+                              color: isDark ? primaryColor : cs.onSurfaceVariant),
+                          value: isDark,
+                          activeColor: primaryColor,
+                          onChanged: (val) {
+                            ref.read(themeModeProvider.notifier).setThemeMode(
+                                val ? ThemeMode.dark : ThemeMode.light);
+                          },
+                        ),
+                      );
+                    }),
                     const SizedBox(height: 40),
 
                     // Save Button

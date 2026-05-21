@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:sportsmate/core/theme/app_colors.dart';
 import 'package:sportsmate/features/auth/presentation/auth_controller.dart';
 import 'package:sportsmate/features/games/data/games_repository.dart';
+import 'package:sportsmate/features/notifications/data/notifications_repository.dart';
+import 'package:sportsmate/features/notifications/domain/notification_entity.dart';
 import 'package:sportsmate/features/friends/presentation/user_profile_screen.dart';
 
 class GameInvitationsScreen extends ConsumerWidget {
@@ -30,7 +32,9 @@ class GameInvitationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final incomingInvitationsAsync = ref.watch(incomingGameInvitationsStreamProvider);
+    final incomingInvitationsAsync = ref.watch(
+      incomingGameInvitationsStreamProvider,
+    );
     final userProfile = ref.watch(userProfileProvider).value;
 
     final primaryGreen = const Color(0xFF1DB954);
@@ -53,11 +57,19 @@ class GameInvitationsScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.mail_outline_rounded, size: 70, color: Colors.grey.shade400),
+                  Icon(
+                    Icons.mail_outline_rounded,
+                    size: 70,
+                    color: Colors.grey.shade400,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     "No pending game invitations",
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 15, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -76,11 +88,11 @@ class GameInvitationsScreen extends ConsumerWidget {
               final hostId = invite['hostId'] ?? '';
               final hostName = invite['hostName'] ?? 'Host';
               final locationName = invite['locationName'] ?? 'Turf';
-              
+
               // Handle Timestamp conversion safely
               final timestamp = invite['date'];
-              final DateTime gameDate = timestamp != null 
-                  ? (timestamp as dynamic).toDate() 
+              final DateTime gameDate = timestamp != null
+                  ? (timestamp as dynamic).toDate()
                   : DateTime.now();
 
               return Container(
@@ -121,12 +133,20 @@ class GameInvitationsScreen extends ConsumerWidget {
                             children: [
                               Text(
                                 "$sportType game",
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Colors.black87,
+                                ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 locationName,
-                                style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w500),
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -138,7 +158,11 @@ class GameInvitationsScreen extends ConsumerWidget {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Icon(Icons.calendar_month, size: 15, color: Colors.grey.shade500),
+                        Icon(
+                          Icons.calendar_month,
+                          size: 15,
+                          color: Colors.grey.shade500,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           DateFormat('EEEE, MMM d').format(gameDate),
@@ -157,7 +181,8 @@ class GameInvitationsScreen extends ConsumerWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => UserProfileScreen(userId: hostId),
+                              builder: (context) =>
+                                  UserProfileScreen(userId: hostId),
                             ),
                           );
                         }
@@ -167,7 +192,11 @@ class GameInvitationsScreen extends ConsumerWidget {
                           children: [
                             TextSpan(
                               text: "Invited by ",
-                              style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontFamily: 'Outfit'),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                                fontFamily: 'Outfit',
+                              ),
                             ),
                             TextSpan(
                               text: hostName,
@@ -188,8 +217,15 @@ class GameInvitationsScreen extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: ElevatedButton.icon(
-                            icon: const Icon(Icons.check, size: 16, color: Colors.white),
-                            label: const Text("Accept", style: TextStyle(fontWeight: FontWeight.bold)),
+                            icon: const Icon(
+                              Icons.check,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                            label: const Text(
+                              "Accept",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: primaryGreen,
                               foregroundColor: Colors.white,
@@ -201,22 +237,46 @@ class GameInvitationsScreen extends ConsumerWidget {
                             ),
                             onPressed: () async {
                               final participantPayload = {
-                                'uid': userProfile?.uid ?? FirebaseAuth.instance.currentUser?.uid ?? '',
+                                'uid':
+                                    userProfile?.uid ??
+                                    FirebaseAuth.instance.currentUser?.uid ??
+                                    '',
                                 'name': userProfile?.name ?? 'Athlete',
                                 'isGuest': false,
                               };
 
                               try {
-                                await ref.read(gamesRepositoryProvider).acceptGameInvitation(
+                                await ref
+                                    .read(gamesRepositoryProvider)
+                                    .acceptGameInvitation(
                                       invitationId: invitationId,
                                       gameId: gameId,
                                       participantPayload: participantPayload,
                                     );
 
+                                try {
+                                  await ref
+                                      .read(notificationsRepositoryProvider)
+                                      .sendNotification(
+                                        NotificationEntity(
+                                          id: '',
+                                          targetUserId: hostId,
+                                          title: 'Invitation Accepted',
+                                          body:
+                                              '${userProfile?.name ?? 'A player'} accepted your invitation for the $sportType game at $locationName.',
+                                          date: DateTime.now(),
+                                        ),
+                                      );
+                                } catch (_) {
+                                  // Ignore notification failures for invite acceptance.
+                                }
+
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text("Accepted invitation to join $hostName's game!"),
+                                      content: Text(
+                                        "Accepted invitation to join $hostName's game!",
+                                      ),
                                       backgroundColor: primaryGreen,
                                     ),
                                   );
@@ -224,7 +284,11 @@ class GameInvitationsScreen extends ConsumerWidget {
                               } catch (e) {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text("Failed to accept invitation: $e")),
+                                    SnackBar(
+                                      content: Text(
+                                        "Failed to accept invitation: $e",
+                                      ),
+                                    ),
                                   );
                                 }
                               }
@@ -234,8 +298,15 @@ class GameInvitationsScreen extends ConsumerWidget {
                         const SizedBox(width: 10),
                         Expanded(
                           child: OutlinedButton.icon(
-                            icon: const Icon(Icons.close, size: 16, color: Colors.redAccent),
-                            label: const Text("Decline", style: TextStyle(fontWeight: FontWeight.bold)),
+                            icon: const Icon(
+                              Icons.close,
+                              size: 16,
+                              color: Colors.redAccent,
+                            ),
+                            label: const Text(
+                              "Decline",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.redAccent,
                               side: const BorderSide(color: Colors.redAccent),
@@ -246,7 +317,9 @@ class GameInvitationsScreen extends ConsumerWidget {
                             ),
                             onPressed: () async {
                               try {
-                                await ref.read(gamesRepositoryProvider).declineGameInvitation(
+                                await ref
+                                    .read(gamesRepositoryProvider)
+                                    .declineGameInvitation(
                                       invitationId: invitationId,
                                     );
 
@@ -260,7 +333,9 @@ class GameInvitationsScreen extends ConsumerWidget {
                               } catch (e) {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text("Failed to decline: $e")),
+                                    SnackBar(
+                                      content: Text("Failed to decline: $e"),
+                                    ),
                                   );
                                 }
                               }
@@ -275,7 +350,9 @@ class GameInvitationsScreen extends ConsumerWidget {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen)),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primaryGreen),
+        ),
         error: (err, stack) => Center(child: Text("Error: $err")),
       ),
     );

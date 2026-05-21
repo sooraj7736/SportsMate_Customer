@@ -19,6 +19,15 @@ import 'package:sportsmate/features/friends/presentation/user_profile_screen.dar
 import 'package:sportsmate/features/games/presentation/game_invitations_screen.dart';
 import 'package:sportsmate/features/profile/presentation/address_selection_screen.dart';
 
+DateTime? parseGameStartDate(GameEntity game) {
+  final parts = game.startTime.split(':');
+  if (parts.length != 2) return null;
+  final hour = int.tryParse(parts[0]);
+  final minute = int.tryParse(parts[1]);
+  if (hour == null || minute == null) return null;
+  return DateTime(game.date.year, game.date.month, game.date.day, hour, minute);
+}
+
 class GamesFeedScreen extends ConsumerStatefulWidget {
   const GamesFeedScreen({super.key});
 
@@ -47,6 +56,21 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
     return 12742 * asin(sqrt(a));
   }
 
+  DateTime? _parseGameStartDate(GameEntity game) {
+    final parts = game.startTime.split(':');
+    if (parts.length != 2) return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return null;
+    return DateTime(
+      game.date.year,
+      game.date.month,
+      game.date.day,
+      hour,
+      minute,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final gamesStream = ref.watch(allGamesStreamProvider);
@@ -57,7 +81,10 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
     final sportsAsync = ref.watch(sportsCatalogProvider);
     final availableSports = sportsAsync.asData?.value ?? const [];
     final sportNames = ['All', ...availableSports.map((sport) => sport.name)];
-    final selectedSport = _selectedSport != null && sportNames.contains(_selectedSport) ? _selectedSport : 'All';
+    final selectedSport =
+        _selectedSport != null && sportNames.contains(_selectedSport)
+        ? _selectedSport
+        : 'All';
     final monthDays = _buildCurrentMonthDays();
 
     return Scaffold(
@@ -93,7 +120,9 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                   Icon(
                     Icons.location_on,
                     size: 13,
-                    color: activeAddress != null ? _primaryGreen : Colors.redAccent,
+                    color: activeAddress != null
+                        ? _primaryGreen
+                        : Colors.redAccent,
                   ),
                   const SizedBox(width: 4),
                   Flexible(
@@ -105,7 +134,9 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 12,
-                        color: activeAddress != null ? Colors.black54 : Colors.redAccent,
+                        color: activeAddress != null
+                            ? Colors.black54
+                            : Colors.redAccent,
                         fontWeight: FontWeight.w600,
                         decoration: TextDecoration.underline,
                       ),
@@ -514,7 +545,12 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                             underline: const SizedBox(),
                             value: selectedSport,
                             items: sportNames
-                                .map((sport) => DropdownMenuItem<String>(value: sport, child: Text(sport)))
+                                .map(
+                                  (sport) => DropdownMenuItem<String>(
+                                    value: sport,
+                                    child: Text(sport),
+                                  ),
+                                )
                                 .toList(),
                             onChanged: (value) {
                               setState(() {
@@ -538,8 +574,14 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                   ),
                   if (activeAddress == null)
                     Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFF9E6),
                         borderRadius: BorderRadius.circular(12),
@@ -547,7 +589,11 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.warning_amber_rounded, color: Color(0xFFB27A00), size: 20),
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            color: Color(0xFFB27A00),
+                            size: 20,
+                          ),
                           const SizedBox(width: 10),
                           const Expanded(
                             child: Text(
@@ -565,13 +611,17 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const AddressSelectionScreen(),
+                                  builder: (context) =>
+                                      const AddressSelectionScreen(),
                                 ),
                               );
                             },
                             style: TextButton.styleFrom(
                               foregroundColor: const Color(0xFFB27A00),
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
@@ -630,12 +680,16 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                   ? 0.0
                                   : (filledSpots / maxPlayers).clamp(0.0, 1.0);
                               final isMatchFull = filledSpots >= maxPlayers;
-                              final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
-                              final hasJoined = currentUserUid != null &&
+                              final currentUserUid =
+                                  FirebaseAuth.instance.currentUser?.uid;
+                              final hasJoined =
+                                  currentUserUid != null &&
                                   game.joinedPlayers.any(
-                                    (p) => p.uid == currentUserUid && !p.isGuest,
+                                    (p) =>
+                                        p.uid == currentUserUid && !p.isGuest,
                                   );
-                              final distance = (activeAddress != null &&
+                              final distance =
+                                  (activeAddress != null &&
                                       game.lat != null &&
                                       game.lng != null)
                                   ? _calculateDistance(
@@ -780,8 +834,10 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                             ),
                                           if (distance != null)
                                             _buildInfoChip(
-                                              icon: Icons.directions_run_outlined,
-                                              label: '${distance.toStringAsFixed(1)} km away',
+                                              icon:
+                                                  Icons.directions_run_outlined,
+                                              label:
+                                                  '${distance.toStringAsFixed(1)} km away',
                                               backgroundColor: const Color(
                                                 0xFFFFF2E6,
                                               ),
@@ -964,34 +1020,40 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                                 ),
                                               ],
                                             )
-                                           : hasJoined
-                                               ? SizedBox(
-                                                   width: double.infinity,
-                                                   child: OutlinedButton(
-                                                     onPressed: null,
-                                                     style: OutlinedButton.styleFrom(
-                                                       backgroundColor: const Color(0xFFE8F5E9),
-                                                       side: const BorderSide(
-                                                         color: Color(0xFF81C784),
-                                                         width: 1.5,
-                                                       ),
-                                                       padding: const EdgeInsets.symmetric(
-                                                         vertical: 12,
-                                                       ),
-                                                       shape: RoundedRectangleBorder(
-                                                         borderRadius: BorderRadius.circular(14),
-                                                       ),
-                                                     ),
-                                                     child: const Text(
-                                                       'Already Joined',
-                                                       style: TextStyle(
-                                                         color: Color(0xFF2E7D32),
-                                                         fontWeight: FontWeight.w800,
-                                                       ),
-                                                     ),
-                                                   ),
-                                                 )
-                                               : SizedBox(
+                                          : hasJoined
+                                          ? SizedBox(
+                                              width: double.infinity,
+                                              child: OutlinedButton(
+                                                onPressed: null,
+                                                style: OutlinedButton.styleFrom(
+                                                  backgroundColor: const Color(
+                                                    0xFFE8F5E9,
+                                                  ),
+                                                  side: const BorderSide(
+                                                    color: Color(0xFF81C784),
+                                                    width: 1.5,
+                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        vertical: 12,
+                                                      ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          14,
+                                                        ),
+                                                  ),
+                                                ),
+                                                child: const Text(
+                                                  'Already Joined',
+                                                  style: TextStyle(
+                                                    color: Color(0xFF2E7D32),
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ),
+                                              ),
+                                            )
+                                          : SizedBox(
                                               width: double.infinity,
                                               child: ElevatedButton(
                                                 onPressed: isMatchFull
@@ -1126,7 +1188,9 @@ Future<void> showJoinGameBottomSheet(
     );
   }
 
-  final hasJoined = game.joinedPlayers.any((p) => p.uid == currentUserUid && !p.isGuest);
+  final hasJoined = game.joinedPlayers.any(
+    (p) => p.uid == currentUserUid && !p.isGuest,
+  );
   if (hasJoined) {
     return showDialog<void>(
       context: context,
@@ -1216,6 +1280,55 @@ class _JoinGameBottomSheetState extends State<_JoinGameBottomSheet> {
     await widget.ref
         .read(gamesRepositoryProvider)
         .joinGame(widget.game.id, participantPayloads);
+
+    final notificationsRepo = widget.ref.read(notificationsRepositoryProvider);
+    final startDateTime = parseGameStartDate(widget.game);
+
+    try {
+      await notificationsRepo.sendNotification(
+        NotificationEntity(
+          id: '',
+          targetUserId: widget.game.hostId,
+          title: 'Player Joined Your Game',
+          body:
+              '${widget.currentUserName} joined your ${widget.game.sportType} game at ${widget.game.locationName}.',
+          date: DateTime.now(),
+        ),
+      );
+
+      if (startDateTime != null) {
+        final reminderTime = startDateTime.subtract(
+          const Duration(minutes: 30),
+        );
+        if (reminderTime.isAfter(DateTime.now())) {
+          await notificationsRepo.sendNotification(
+            NotificationEntity(
+              id: '',
+              targetUserId: widget.currentUserUid,
+              title: 'Game Reminder: 30 Minutes Left',
+              body:
+                  'Your ${widget.game.sportType} game at ${widget.game.locationName} starts at ${widget.game.startTime}.',
+              date: reminderTime,
+            ),
+          );
+        }
+
+        if (startDateTime.isAfter(DateTime.now())) {
+          await notificationsRepo.sendNotification(
+            NotificationEntity(
+              id: '',
+              targetUserId: widget.currentUserUid,
+              title: 'Game Starting Now',
+              body:
+                  'Your ${widget.game.sportType} game at ${widget.game.locationName} is starting now.',
+              date: startDateTime,
+            ),
+          );
+        }
+      }
+    } catch (_) {
+      // Don't block successful join if notification creation fails.
+    }
 
     if (!mounted) {
       return;
