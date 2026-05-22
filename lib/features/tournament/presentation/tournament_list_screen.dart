@@ -159,8 +159,15 @@ class TournamentListScreen extends ConsumerWidget {
                                       ),
                                       child: Row(
                                         children: [
-                                          Icon(Icons.bolt, size: 14, color: colorScheme.tertiary),
-                                          Text('Boosted', style: TextStyle(color: colorScheme.tertiary, fontWeight: FontWeight.bold, fontSize: 12)),
+                                          Icon(Icons.bolt, size: 14, color: colorScheme.onTertiaryContainer),
+                                          Text(
+                                            'Boosted',
+                                            style: TextStyle(
+                                              color: colorScheme.onTertiaryContainer,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
