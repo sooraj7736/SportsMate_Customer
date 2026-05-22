@@ -37,8 +37,10 @@ class GameInvitationsScreen extends ConsumerWidget {
     );
     final userProfile = ref.watch(userProfileProvider).value;
 
-    final primaryGreen = const Color(0xFF1DB954);
-    final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primaryGreen = colorScheme.primary;
+    final scaffoldBg = theme.scaffoldBackgroundColor;
 
     return Scaffold(
       appBar: AppBar(
@@ -60,13 +62,13 @@ class GameInvitationsScreen extends ConsumerWidget {
                   Icon(
                     Icons.mail_outline_rounded,
                     size: 70,
-                    color: Colors.grey.shade400,
+                    color: colorScheme.onSurface.withOpacity(0.38),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     "No pending game invitations",
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                     ),
@@ -98,16 +100,16 @@ class GameInvitationsScreen extends ConsumerWidget {
               return Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
+                      color: theme.shadowColor.withOpacity(0.03),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
                   ],
-                  border: Border.all(color: Colors.black.withOpacity(0.04)),
+                  border: Border.all(color: theme.dividerColor.withOpacity(0.04)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,17 +135,16 @@ class GameInvitationsScreen extends ConsumerWidget {
                             children: [
                               Text(
                                 "$sportType game",
-                                style: const TextStyle(
+                                style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
-                                  color: Colors.black87,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 locationName,
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.8),
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -161,14 +162,13 @@ class GameInvitationsScreen extends ConsumerWidget {
                         Icon(
                           Icons.calendar_month,
                           size: 15,
-                          color: Colors.grey.shade500,
+                          color: theme.iconTheme.color?.withOpacity(0.7),
                         ),
                         const SizedBox(width: 6),
                         Text(
                           DateFormat('EEEE, MMM d').format(gameDate),
-                          style: TextStyle(
+                          style: theme.textTheme.bodyMedium?.copyWith(
                             fontSize: 13,
-                            color: Colors.grey.shade700,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -192,18 +192,18 @@ class GameInvitationsScreen extends ConsumerWidget {
                           children: [
                             TextSpan(
                               text: "Invited by ",
-                              style: TextStyle(
+                              style: theme.textTheme.bodyMedium?.copyWith(
                                 fontSize: 13,
-                                color: Colors.grey.shade600,
+                                color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
                                 fontFamily: 'Outfit',
                               ),
                             ),
                             TextSpan(
                               text: hostName,
-                              style: TextStyle(
+                              style: theme.textTheme.bodyMedium?.copyWith(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: primaryGreen,
+                                color: colorScheme.primary,
                                 decoration: TextDecoration.underline,
                                 fontFamily: 'Outfit',
                               ),
@@ -217,18 +217,18 @@ class GameInvitationsScreen extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: ElevatedButton.icon(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.check,
                               size: 16,
-                              color: Colors.white,
+                              color: colorScheme.onPrimary,
                             ),
                             label: const Text(
                               "Accept",
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryGreen,
-                              foregroundColor: Colors.white,
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: colorScheme.onPrimary,
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               shape: RoundedRectangleBorder(
@@ -277,7 +277,7 @@ class GameInvitationsScreen extends ConsumerWidget {
                                       content: Text(
                                         "Accepted invitation to join $hostName's game!",
                                       ),
-                                      backgroundColor: primaryGreen,
+                                      backgroundColor: colorScheme.primary,
                                     ),
                                   );
                                 }
@@ -298,18 +298,18 @@ class GameInvitationsScreen extends ConsumerWidget {
                         const SizedBox(width: 10),
                         Expanded(
                           child: OutlinedButton.icon(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.close,
                               size: 16,
-                              color: Colors.redAccent,
+                              color: colorScheme.error,
                             ),
                             label: const Text(
                               "Decline",
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.redAccent,
-                              side: const BorderSide(color: Colors.redAccent),
+                              foregroundColor: colorScheme.error,
+                              side: BorderSide(color: colorScheme.error),
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
@@ -350,8 +350,8 @@ class GameInvitationsScreen extends ConsumerWidget {
             },
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primaryGreen),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: colorScheme.primary),
         ),
         error: (err, stack) => Center(child: Text("Error: $err")),
       ),

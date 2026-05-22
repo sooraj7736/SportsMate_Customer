@@ -2524,6 +2524,8 @@ class _TournamentDetailsScreenState
     final basketballLiveScoreAsync = _isBasketballTournament
         ? ref.watch(basketballLiveScoreStreamProvider(t.id))
         : null;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: Text(t.tournamentName)),
@@ -2846,18 +2848,24 @@ class _TournamentDetailsScreenState
                                       ? null
                                       : _generateFixtures,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red.shade700,
-                                    foregroundColor: Colors.white,
+                                    backgroundColor: colorScheme.error,
+                                    foregroundColor: colorScheme.onError,
                                     padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
+                                      vertical: 20,
                                     ),
+                                    minimumSize: const Size.fromHeight(56),
                                   ),
                                   icon: _isGeneratingFixtures
                                       ? const SizedBox.shrink()
                                       : const Icon(Icons.refresh),
                                   label: _isGeneratingFixtures
-                                      ? const CircularProgressIndicator(
-                                          color: Colors.white,
+                                      ? SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            color: colorScheme.onError,
+                                            strokeWidth: 2,
+                                          ),
                                         )
                                       : const Text(
                                           "Reset & Re-generate Bracket",
@@ -2871,13 +2879,19 @@ class _TournamentDetailsScreenState
                                 ? null
                                 : _generateFixtures,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: colorScheme.onPrimary,
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              minimumSize: const Size.fromHeight(56),
                             ),
                             child: _isGeneratingFixtures
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white,
+                                ? SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      color: colorScheme.onPrimary,
+                                      strokeWidth: 2,
+                                    ),
                                   )
                                 : const Text("Set Fixtures Bracket"),
                           ))

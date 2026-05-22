@@ -67,10 +67,10 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
     if (userProfile == null) return const Scaffold(body: Center(child: Text("Please login")));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text("New Group", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
+        title: const Text("New Group", style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0.5,
         actions: [
           TextButton(
@@ -89,7 +89,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                 hintText: "Group Name",
                 prefixIcon: const Icon(Icons.group_work),
                 filled: true,
-                fillColor: Colors.grey.shade100,
+                fillColor: Theme.of(context).inputDecorationTheme.fillColor ?? Theme.of(context).cardColor,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               ),
             ),
@@ -102,7 +102,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                 hintText: "Add Members",
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
-                fillColor: Colors.grey.shade100,
+                fillColor: Theme.of(context).inputDecorationTheme.fillColor ?? Theme.of(context).cardColor,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               ),
             ),
@@ -137,11 +137,11 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                                   top: 0,
                                   child: GestureDetector(
                                     onTap: () => _toggleUser(uid),
-                                    child: const CircleAvatar(
-                                      radius: 8,
-                                      backgroundColor: Colors.grey,
-                                      child: Icon(Icons.close, size: 10, color: Colors.white),
-                                    ),
+                                    child: CircleAvatar(
+                                          radius: 8,
+                                          backgroundColor: Theme.of(context).dividerColor,
+                                          child: Icon(Icons.close, size: 10, color: Theme.of(context).colorScheme.onSurface),
+                                        ),
                                   ),
                                 ),
                               ],
@@ -193,7 +193,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                       subtitle: Text("@${athlete.username}"),
                       trailing: Icon(
                         isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-                        color: isSelected ? Colors.blue : Colors.grey,
+                        color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).disabledColor,
                       ),
                       onTap: () => _toggleUser(athlete.uid),
                     );

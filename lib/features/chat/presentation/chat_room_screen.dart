@@ -64,9 +64,9 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     final imageUrl = widget.groupChat?.groupImage ?? widget.otherUser?.profilePic;
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0.5,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -80,10 +80,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
               child: imageUrl == null ? Icon(widget.groupChat != null ? Icons.group : Icons.person, size: 20) : null,
             ),
             const SizedBox(width: 10),
-            Text(
-              title,
-              style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+              Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 16, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -128,9 +125,9 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
         top: 10,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2)),
+          BoxShadow(color: Theme.of(context).shadowColor.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2)),
         ],
       ),
       child: Row(
@@ -139,7 +136,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: Theme.of(context).inputDecorationTheme.fillColor ?? Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: TextField(
@@ -154,9 +151,9 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
           const SizedBox(width: 10),
           GestureDetector(
             onTap: _sendMessage,
-            child: const CircleAvatar(
-              backgroundColor: Colors.blue,
-              child: Icon(Icons.send, color: Colors.white, size: 20),
+            child: CircleAvatar(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              child: Icon(Icons.send, color: Theme.of(context).colorScheme.onPrimary, size: 20),
             ),
           ),
         ],
@@ -164,37 +161,37 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     );
   }
 }
-
 class _MessageBubble extends ConsumerWidget {
   final MessageEntity message;
   final bool isMe;
   final String chatId;
 
-  const _MessageBubble({required this.message, required this.isMe, required this.chatId});
+  const _MessageBubble({required this.message, required this.isMe, required this.chatId, super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Mark as read if received and not already read
     if (!isMe && !message.isRead) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(chatRepositoryProvider).markMessageAsRead(chatId, message.id);
       });
     }
 
+    final theme = Theme.of(context);
+    final sentGradient = LinearGradient(colors: [theme.colorScheme.primary, theme.colorScheme.primaryContainer]);
+    final recvColor = theme.colorScheme.surfaceVariant;
+
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Column(
         crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
-          if (message.sharedPostId != null)
-            _buildSharedFeedPreview(context, ref, message.sharedPostId!),
+          if (message.sharedPostId != null) _buildSharedFeedPreview(context, ref, message.sharedPostId!),
           Container(
             margin: const EdgeInsets.symmetric(vertical: 4),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              gradient: isMe 
-                  ? const LinearGradient(colors: [Color(0xFF007AFF), Color(0xFF00C6FF)])
-                  : LinearGradient(colors: [Colors.grey.shade200, Colors.grey.shade200]),
+              gradient: isMe ? sentGradient : null,
+              color: isMe ? null : recvColor,
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(20),
                 topRight: const Radius.circular(20),
@@ -203,7 +200,7 @@ class _MessageBubble extends ConsumerWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: theme.shadowColor.withOpacity(0.05),
                   blurRadius: 5,
                   offset: const Offset(0, 2),
                 ),
@@ -216,7 +213,7 @@ class _MessageBubble extends ConsumerWidget {
                 Text(
                   message.text,
                   style: TextStyle(
-                    color: isMe ? Colors.white : Colors.black87,
+                    color: isMe ? theme.colorScheme.onPrimary : theme.textTheme.bodyLarge?.color,
                     fontSize: 15,
                     height: 1.3,
                   ),
@@ -228,7 +225,7 @@ class _MessageBubble extends ConsumerWidget {
                     Text(
                       DateFormat('h:mm a').format(message.date),
                       style: TextStyle(
-                        color: isMe ? Colors.white.withOpacity(0.7) : Colors.grey,
+                        color: isMe ? theme.colorScheme.onPrimary.withOpacity(0.7) : theme.textTheme.bodySmall?.color,
                         fontSize: 10,
                       ),
                     ),
@@ -237,7 +234,7 @@ class _MessageBubble extends ConsumerWidget {
                       Icon(
                         message.isRead ? Icons.done_all : Icons.check,
                         size: 14,
-                        color: message.isRead ? Colors.lightBlueAccent : Colors.white.withOpacity(0.7),
+                        color: message.isRead ? Colors.lightBlueAccent : theme.colorScheme.onPrimary.withOpacity(0.7),
                       ),
                     ],
                   ],
@@ -256,16 +253,18 @@ class _MessageBubble extends ConsumerWidget {
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const SizedBox();
         final feed = snapshot.data!;
-        
+
+        final theme = Theme.of(context);
+
         return Container(
           width: 200,
           margin: const EdgeInsets.only(bottom: 4),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.cardColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: theme.dividerColor),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+              BoxShadow(color: theme.shadowColor.withOpacity(0.05), blurRadius: 10),
             ],
           ),
           child: Column(
@@ -274,21 +273,21 @@ class _MessageBubble extends ConsumerWidget {
               if (feed.mediaUrl.isNotEmpty)
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: feed.mediaUrl.startsWith('http') 
-                    ? Image.network(
-                        feed.mediaUrl,
-                        height: 120,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => _buildErrorPlaceholder(),
-                      )
-                    : Image.file(
-                        File(feed.mediaUrl),
-                        height: 120,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => _buildErrorPlaceholder(),
-                      ),
+                  child: feed.mediaUrl.startsWith('http')
+                      ? Image.network(
+                          feed.mediaUrl,
+                          height: 120,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => _buildErrorPlaceholder(),
+                        )
+                      : Image.file(
+                          File(feed.mediaUrl),
+                          height: 120,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => _buildErrorPlaceholder(),
+                        ),
                 ),
               Padding(
                 padding: const EdgeInsets.all(10),
@@ -305,7 +304,7 @@ class _MessageBubble extends ConsumerWidget {
                         Expanded(
                           child: Text(
                             feed.username,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, fontSize: 11),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -315,7 +314,7 @@ class _MessageBubble extends ConsumerWidget {
                     const SizedBox(height: 6),
                     Text(
                       feed.description,
-                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                      style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
