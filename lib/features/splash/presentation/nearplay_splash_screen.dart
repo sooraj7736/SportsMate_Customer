@@ -50,22 +50,11 @@ class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen> wit
     final startTime = DateTime.now();
 
     try {
-      // 1. Precache image assets to avoid load flickering later
+      // Precache image assets to avoid flickering later.
       await precacheImage(const AssetImage('assets/nearplay.png'), context);
       await precacheImage(const AssetImage('assets/icon_nearplay.png'), context);
 
-      // 2. Pre-warm auth state
-      final auth = ref.read(firebaseAuthProvider);
-      final User? currentUser = auth.currentUser;
-
-      if (currentUser != null) {
-        // 3. User is logged in: pre-fetch the profile data, feed list, and ad list concurrently
-        await Future.wait([
-          ref.read(userProfileProvider.future).catchError((_) => null),
-          ref.read(feedListStreamProvider.future).catchError((_) => <FeedEntity>[]),
-          ref.read(adListStreamProvider.future).catchError((_) => <AdEntity>[]),
-        ]);
-      }
+      _warmUpData();
     } catch (e) {
       debugPrint("Preloading failed or timed out: $e");
     }
@@ -78,6 +67,25 @@ class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen> wit
 
     if (mounted) {
       _navigateToMain();
+    }
+  }
+
+  Future<void> _warmUpData() async {
+    final auth = ref.read(firebaseAuthProvider);
+    final User? currentUser = auth.currentUser;
+
+    if (currentUser == null) {
+      return;
+    }
+
+    try {
+      await Future.wait([
+        ref.read(userProfileProvider.future).catchError((_) => null),
+        ref.read(feedListStreamProvider.future).catchError((_) => <FeedEntity>[]),
+        ref.read(adListStreamProvider.future).catchError((_) => <AdEntity>[]),
+      ]).timeout(const Duration(seconds: 5));
+    } catch (_) {
+      // Ignore preload failures; navigation should not be blocked.
     }
   }
 
