@@ -56,21 +56,6 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
     return 12742 * asin(sqrt(a));
   }
 
-  DateTime? _parseGameStartDate(GameEntity game) {
-    final parts = game.startTime.split(':');
-    if (parts.length != 2) return null;
-    final hour = int.tryParse(parts[0]);
-    final minute = int.tryParse(parts[1]);
-    if (hour == null || minute == null) return null;
-    return DateTime(
-      game.date.year,
-      game.date.month,
-      game.date.day,
-      hour,
-      minute,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1063,12 +1048,12 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
 
   List<DateTime> _buildCurrentMonthDays() {
     final now = DateTime.now();
-    final firstDay = DateTime(now.year, now.month, 1);
+    final firstSelectableDay = DateTime(now.year, now.month, now.day);
     final nextMonth = DateTime(now.year, now.month + 1, 1);
-    final totalDays = nextMonth.difference(firstDay).inDays;
+    final totalDays = nextMonth.difference(firstSelectableDay).inDays;
     return List.generate(
       totalDays,
-      (index) => DateTime(now.year, now.month, index + 1),
+      (index) => firstSelectableDay.add(Duration(days: index)),
     );
   }
 
