@@ -187,6 +187,13 @@ class _IncidentCard extends StatelessWidget {
         : isPenalty
           ? colorScheme.tertiary
           : colorScheme.primary;
+    final foregroundColor = isRed
+      ? colorScheme.onErrorContainer
+      : isYellow
+        ? colorScheme.onSecondaryContainer
+        : isPenalty
+          ? colorScheme.onTertiaryContainer
+          : colorScheme.onPrimaryContainer;
     final icon = isRed
         ? Icons.stop_circle_outlined
         : isYellow
@@ -228,12 +235,13 @@ class _IncidentCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: accentColor.withValues(alpha: 0.12),
+                        color: theme.cardColor.withValues(alpha: 0.8),
                         borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: accentColor.withValues(alpha: 0.18)),
                       ),
                       child: Text(
                         minutePrefix.isNotEmpty ? "$minutePrefix • $incidentType" : incidentType,
-                        style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700, color: accentColor, fontSize: 12),
+                        style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700, color: foregroundColor, fontSize: 12),
                       ),
                     ),
                   ],
@@ -244,14 +252,14 @@ class _IncidentCard extends StatelessWidget {
                     [if (playerName.isNotEmpty) playerName, if (teamName.isNotEmpty) teamName]
                         .join(' • ')
                         .trim(),
-                    style: theme.textTheme.bodyLarge?.copyWith(fontSize: 15, fontWeight: FontWeight.w700),
+                    style: theme.textTheme.bodyLarge?.copyWith(fontSize: 15, fontWeight: FontWeight.w700, color: foregroundColor),
                   ),
                 if (extraNote.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: theme.cardColor.withValues(alpha: 0.6),
+                      color: theme.cardColor.withValues(alpha: 0.82),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
@@ -259,12 +267,12 @@ class _IncidentCard extends StatelessWidget {
                       children: [
                         Text(
                           'Note',
-                          style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, fontWeight: FontWeight.w600, color: colorScheme.onSurfaceVariant),
+                          style: theme.textTheme.bodySmall?.copyWith(fontSize: 10, fontWeight: FontWeight.w600, color: foregroundColor),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           extraNote,
-                          style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant, fontSize: 13),
+                          style: theme.textTheme.bodySmall?.copyWith(color: foregroundColor, fontSize: 13),
                         ),
                       ],
                     ),
@@ -288,6 +296,7 @@ class _IncidentSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final summaryForeground = colorScheme.onSecondaryContainer;
     // Parse incidents by team
     final cardsByTeam = <String, Map<String, int>>{};
     
@@ -329,7 +338,7 @@ class _IncidentSummary extends StatelessWidget {
         children: [
           Text(
             'Foul/Incident Summary',
-            style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700, color: colorScheme.secondary, fontSize: 12),
+            style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700, color: summaryForeground, fontSize: 12),
           ),
           const SizedBox(height: 10),
           Wrap(
@@ -351,7 +360,7 @@ class _IncidentSummary extends StatelessWidget {
                   children: [
                     Text(
                       teamName,
-                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, fontSize: 13),
+                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, fontSize: 13, color: summaryForeground),
                     ),
                     const SizedBox(width: 10),
                     if (stats['yellow']! > 0) ...[
@@ -363,7 +372,7 @@ class _IncidentSummary extends StatelessWidget {
                         ),
                         child: Text(
                           '🟨 ${stats['yellow']}',
-                          style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700, color: colorScheme.secondary, fontSize: 12),
+                          style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700, color: summaryForeground, fontSize: 12),
                         ),
                       ),
                       const SizedBox(width: 6),
