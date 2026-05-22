@@ -39,8 +39,29 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
   DateTime? _selectedDay;
   String? _selectedSport;
   int? _selectedDistance;
+  late final ScrollController _dayStripController;
 
   static const Color _primaryGreen = Color(0xFF1DB954);
+
+  static const double _dayTileWidth = 56;
+  static const double _dayTileSpacing = 10;
+  static const double _dayTileExtent = _dayTileWidth + _dayTileSpacing;
+
+  @override
+  void initState() {
+    super.initState();
+    final today = DateTime.now();
+    final todayIndex = today.day - 1;
+    _dayStripController = ScrollController(
+      initialScrollOffset: todayIndex > 0 ? todayIndex * _dayTileExtent : 0,
+    );
+  }
+
+  @override
+  void dispose() {
+    _dayStripController.dispose();
+    super.dispose();
+  }
 
   double _calculateDistance(
     double lat1,
@@ -68,6 +89,12 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
     final sportsAsync = ref.watch(sportsCatalogProvider);
     final availableSports = sportsAsync.asData?.value ?? const [];
     final sportNames = ['All', ...availableSports.map((sport) => sport.name)];
+    final todayStart = DateTime.now();
+    final currentDayStart = DateTime(
+      todayStart.year,
+      todayStart.month,
+      todayStart.day,
+    );
     final selectedSport =
         _selectedSport != null && sportNames.contains(_selectedSport)
         ? _selectedSport
@@ -322,12 +349,14 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                         SizedBox(
                           height: 74,
                           child: ListView.separated(
+                            controller: _dayStripController,
                             scrollDirection: Axis.horizontal,
                             itemCount: monthDays.length,
                             separatorBuilder: (_, __) =>
                                 const SizedBox(width: 10),
                             itemBuilder: (context, index) {
                               final day = monthDays[index];
+                              final isPastDay = day.isBefore(currentDayStart);
                               final isSelected =
                                   _selectedDay != null &&
                                   DateUtils.isSameDay(day, _selectedDay);
@@ -337,11 +366,13 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                               );
 
                               return InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    _selectedDay = day;
-                                  });
-                                },
+                                onTap: isPastDay
+                                    ? null
+                                    : () {
+                                        setState(() {
+                                          _selectedDay = day;
+                                        });
+                                      },
                                 borderRadius: BorderRadius.circular(16),
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 180),
@@ -360,29 +391,32 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                                 : theme.dividerColor,
                                       ),
                                     ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        DateFormat(
-                                          'E',
-                                        ).format(day).toUpperCase(),
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                          color: isSelected ? colorScheme.onPrimary : theme.textTheme.bodySmall?.color,
+                                  child: Opacity(
+                                    opacity: isPastDay ? 0.35 : 1,
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          DateFormat(
+                                            'E',
+                                          ).format(day).toUpperCase(),
+                                          style: theme.textTheme.bodySmall?.copyWith(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: isSelected ? colorScheme.onPrimary : theme.textTheme.bodySmall?.color,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        day.day.toString(),
-                                        style: theme.textTheme.titleLarge?.copyWith(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w800,
-                                          color: isSelected ? colorScheme.onPrimary : theme.textTheme.bodyLarge?.color,
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          day.day.toString(),
+                                          style: theme.textTheme.titleLarge?.copyWith(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w800,
+                                            color: isSelected ? colorScheme.onPrimary : theme.textTheme.bodyLarge?.color,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               );
@@ -1048,12 +1082,12 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
 
   List<DateTime> _buildCurrentMonthDays() {
     final now = DateTime.now();
-    final firstSelectableDay = DateTime(now.year, now.month, now.day);
+    final firstDay = DateTime(now.year, now.month, 1);
     final nextMonth = DateTime(now.year, now.month + 1, 1);
-    final totalDays = nextMonth.difference(firstSelectableDay).inDays;
+    final totalDays = nextMonth.difference(firstDay).inDays;
     return List.generate(
       totalDays,
-      (index) => firstSelectableDay.add(Duration(days: index)),
+      (index) => DateTime(now.year, now.month, index + 1),
     );
   }
 
