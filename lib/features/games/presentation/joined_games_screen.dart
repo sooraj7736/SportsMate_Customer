@@ -120,7 +120,7 @@ class _JoinedGameCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Card(
         elevation: 0,
-        color: Colors.white,
+        color: cardTheme.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         child: Padding(
         padding: const EdgeInsets.all(14.0),

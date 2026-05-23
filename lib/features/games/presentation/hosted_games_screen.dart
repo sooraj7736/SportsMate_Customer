@@ -104,7 +104,7 @@ class _HostedGameCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Card(
         elevation: 0,
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         child: InkWell(
         onTap: onTap,
