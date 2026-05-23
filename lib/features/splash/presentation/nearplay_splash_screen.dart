@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:lottie/lottie.dart'; 
 import '../../../main_wrapper.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/common_providers.dart';
@@ -18,17 +17,11 @@ class NearPlaySplashScreen extends ConsumerStatefulWidget {
   ConsumerState<NearPlaySplashScreen> createState() => _NearPlaySplashScreenState();
 }
 
-class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen>
-    with SingleTickerProviderStateMixin { // Required mixin for manual playback driving
-  
-  late final AnimationController _lottieController;
+class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen> {
 
   @override
   void initState() {
     super.initState();
-    // Initialize our manual engine controller
-    _lottieController = AnimationController(vsync: this);
-
     if (!widget.isStatic) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -91,12 +84,6 @@ class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen>
   }
 
   @override
-  void dispose() {
-    _lottieController.dispose(); // Clean up controller resources to protect memory
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.deepPitch, 
@@ -107,15 +94,15 @@ class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
-                  width: 320,
-                  height: 240,
+                  width: 380,
+                  height: 300,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
                       // 1. Radial Backdrop Glow
                       Container(
-                        width: 200,
-                        height: 200,
+                        width: 250,
+                        height: 250,
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
@@ -128,50 +115,25 @@ class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen>
                         ),
                       ),
                       
-                      // 2. Static Background Image
-                      Opacity(
-                        opacity: 0.35, 
-                        child: Image.asset(
-                          'assets/icon_nearplay.png',
-                          width: 140,
-                          height: 140,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
                       
-                      // 3. Forced Manual-Drive Lottie Layer
+                      
+                      // 3. Animated GIF layer
                       Positioned.fill(
-                        child: Lottie.asset(
-                          'assets/animations/splash_logo.json',
-                          controller: _lottieController, // Link manual controller
+                        child: Image.asset(
+                          'assets/animations/splash_logo.gif',
                           fit: BoxFit.contain,
-                          onLoaded: (composition) {
-                            // Assign vector length metadata to our controller
-                            _lottieController.duration = composition.duration;
-                            
-                            // FORCE JUMP-START: Wait 1 frame for layout stability, then ignite the loop
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              if (mounted) {
-                                _lottieController.repeat();
-                                debugPrint("🚀 Lottie engine forced loop kicked off successfully!");
-                              }
-                            });
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            debugPrint('CRITICAL Lottie parse error: $error');
-                            return const SizedBox.shrink();
-                          },
+                          gaplessPlayback: true,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 const Text(
                   "Play Near. Play Now.",
                   style: TextStyle(
                     color: Colors.white70,
-                    fontSize: 16,
+                    fontSize: 18,
                     fontWeight: FontWeight.w500,
                     letterSpacing: 1.2,
                   ),
@@ -180,21 +142,7 @@ class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen>
             ),
           ),
           
-          const Positioned(
-            bottom: 60,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.0,
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xCC0F5132)),
-                ),
-              ),
-            ),
-          ),
+          
         ],
       ),
     );
