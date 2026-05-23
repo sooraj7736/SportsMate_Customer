@@ -247,7 +247,13 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
         children: [
           gamesStream.when(
             data: (gamesList) {
+              final now = DateTime.now();
+              final todayDate = DateTime(now.year, now.month, now.day);
+
               final filteredGames = gamesList.where((game) {
+                // Exclude games scheduled before today
+                final gameDateOnly = DateTime(game.date.year, game.date.month, game.date.day);
+                if (gameDateOnly.isBefore(todayDate)) return false;
                 // Filter by selected day
                 if (_selectedDay != null &&
                     !DateUtils.isSameDay(game.date, _selectedDay)) {

@@ -47,6 +47,7 @@ class JoinedGamesScreen extends ConsumerWidget {
 
           return ListView.builder(
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+            
             itemCount: games.length,
             itemBuilder: (context, index) {
               final game = games[index];
@@ -116,11 +117,13 @@ class _JoinedGameCard extends StatelessWidget {
       game.date.day,
     );
 
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      child: Padding(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Card(
+        elevation: 0,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        child: Padding(
         padding: const EdgeInsets.all(14.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,7 +247,7 @@ class _JoinedGameCard extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 

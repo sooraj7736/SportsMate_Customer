@@ -104,11 +104,13 @@ class _HostedGameCard extends StatelessWidget {
     final participantCount = game.joinedPlayers.length;
     final maxPlayers = game.maxPlayers;
 
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      child: InkWell(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Card(
+        elevation: 0,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: Padding(
@@ -210,7 +212,7 @@ class _HostedGameCard extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 }
 
