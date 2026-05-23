@@ -132,20 +132,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             Center(
               child: Stack(
                 children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Colors.grey[200],
-                    backgroundImage: _image != null ? FileImage(_image!) : null,
-                    child: _image == null ? const Icon(Icons.person, size: 60, color: Colors.grey) : null,
-                  ),
+                    CircleAvatar(
+                          radius: 60,
+                          backgroundColor: Theme.of(context).colorScheme.surface,
+                          backgroundImage: _image != null ? FileImage(_image!) : null,
+                          child: _image == null ? Icon(Icons.person, size: 60, color: Theme.of(context).colorScheme.onSurface) : null,
+                        ),
                   Positioned(
                     bottom: 0,
                     right: 0,
                     child: CircleAvatar(
-                      backgroundColor: Theme.of(context).primaryColor,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                       radius: 20,
                       child: IconButton(
-                        icon: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                          icon: Icon(Icons.camera_alt, size: 18, color: Theme.of(context).colorScheme.onPrimary),
                         onPressed: _pickImage,
                       ),
                     ),
@@ -177,7 +177,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                   )
                 : (usernameController.text.isNotEmpty && registerState.isUsernameUnique)
-                  ? const Icon(Icons.check_circle, color: Colors.green)
+                  ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
                   : null,
             ),
             
@@ -287,8 +287,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               icon: const Icon(Icons.map),
               label: Text(_selectedLat != null ? "Location Selected on Map" : "Pick Location on Map"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _selectedLat != null ? Colors.green : Colors.grey[200],
-                foregroundColor: _selectedLat != null ? Colors.white : Colors.black87,
+                backgroundColor: _selectedLat != null ? Theme.of(context).colorScheme.primary : Theme.of(context).disabledColor,
+                foregroundColor: _selectedLat != null ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).textTheme.bodyLarge?.color,
                 elevation: 0,
               ),
             ),

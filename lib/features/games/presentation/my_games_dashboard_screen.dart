@@ -9,15 +9,16 @@ class MyGamesDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF5F7FB),
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: theme.appBarTheme.backgroundColor ?? theme.scaffoldBackgroundColor,
           elevation: 0,
           titleSpacing: 16,
-          title: const Column(
+          title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -25,7 +26,7 @@ class MyGamesDashboardScreen extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 22,
-                  color: Colors.black87,
+                  color: theme.textTheme.titleLarge?.color,
                 ),
               ),
               SizedBox(height: 2),
@@ -33,7 +34,7 @@ class MyGamesDashboardScreen extends StatelessWidget {
                 'Manage your match events',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.black54,
+                  color: theme.textTheme.bodySmall?.color,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -43,14 +44,15 @@ class MyGamesDashboardScreen extends StatelessWidget {
             indicatorColor: _primaryGreen,
             indicatorWeight: 3,
             labelColor: _primaryGreen,
-            unselectedLabelColor: Colors.black54,
+            unselectedLabelColor: theme.textTheme.bodyMedium?.color,
             labelStyle: const TextStyle(
               fontWeight: FontWeight.w800,
               fontSize: 14,
             ),
-            unselectedLabelStyle: const TextStyle(
+            unselectedLabelStyle: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 14,
+              color: theme.textTheme.bodyMedium?.color,
             ),
             tabs: const [
               Tab(text: 'Hosted By Me'),

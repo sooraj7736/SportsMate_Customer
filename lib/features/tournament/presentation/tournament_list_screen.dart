@@ -42,7 +42,7 @@ class _BlinkingDotState extends State<BlinkingDot> with SingleTickerProviderStat
       child: Container(
         width: widget.size,
         height: widget.size,
-        decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.error, shape: BoxShape.circle),
       ),
     );
   }
@@ -53,6 +53,8 @@ class TournamentListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final tournamentsAsync = ref.watch(tournamentListStreamProvider);
 
     final userProfile = ref.watch(userProfileProvider).value;
@@ -71,6 +73,7 @@ class TournamentListScreen extends ConsumerWidget {
           ),
         ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
         onPressed: () {
           Navigator.push(
             context,
@@ -118,17 +121,17 @@ class TournamentListScreen extends ConsumerWidget {
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Container(
                               height: 160,
-                              color: Colors.grey.shade300,
-                              child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                              color: theme.colorScheme.surfaceContainerHighest,
+                              child: Icon(Icons.broken_image, size: 50, color: theme.iconTheme.color),
                             ),
                           )
                         else
                           Container(
                             height: 120,
-                            color: Colors.blue.shade100,
+                            color: colorScheme.primaryContainer,
                             width: double.infinity,
                             child: Center(
-                              child: Icon(Icons.emoji_events, size: 60, color: Colors.blue.shade700),
+                              child: Icon(Icons.emoji_events, size: 60, color: colorScheme.primary),
                             ),
                           ),
                         Padding(
@@ -142,56 +145,63 @@ class TournamentListScreen extends ConsumerWidget {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: Colors.blue.shade50,
+                                      color: colorScheme.primaryContainer,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: Text(t.sport, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12)),
+                                    child: Text(t.sport, style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 12)),
                                   ),
                                   if (t.isBoosted)
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: Colors.orange.shade50,
+                                        color: colorScheme.tertiaryContainer,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Row(
                                         children: [
-                                          Icon(Icons.bolt, size: 14, color: Colors.orange.shade700),
-                                          Text('Boosted', style: TextStyle(color: Colors.orange.shade700, fontWeight: FontWeight.bold, fontSize: 12)),
+                                          Icon(Icons.bolt, size: 14, color: colorScheme.onTertiaryContainer),
+                                          Text(
+                                            'Boosted',
+                                            style: TextStyle(
+                                              color: colorScheme.onTertiaryContainer,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              Text(t.tournamentName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              Text(t.tournamentName, style: theme.textTheme.titleMedium?.copyWith(fontSize: 18, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 4),
-                              Text("Hosted by ${t.hostName}", style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                              Text("Hosted by ${t.hostName}", style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
                               const SizedBox(height: 12),
                               Row(
                                 children: [
-                                  Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
+                                  Icon(Icons.calendar_today, size: 16, color: theme.iconTheme.color),
                                   const SizedBox(width: 8),
                                   Text(
                                     "${DateFormat('MMM dd').format(t.startDate)} - ${DateFormat('MMM dd, yyyy').format(t.endDate)}",
-                                    style: TextStyle(color: Colors.grey.shade800, fontSize: 13),
+                                    style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 8),
                               Row(
                                 children: [
-                                  Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
+                                  Icon(Icons.location_on, size: 16, color: theme.iconTheme.color),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Row(
                                       children: [
                                         Flexible(
-                                          child: Text(t.location, style: TextStyle(color: Colors.grey.shade800, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                          child: Text(t.location, style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
                                         ),
                                         if (t.isVerifiedTurf) ...[
                                           const SizedBox(width: 4),
-                                          const Icon(Icons.verified, color: Colors.blue, size: 14),
+                                          Icon(Icons.verified, color: colorScheme.primary, size: 14),
                                         ],
                                       ],
                                     ),
@@ -205,8 +215,8 @@ class TournamentListScreen extends ConsumerWidget {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text("Entry Fee", style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-                                        Text(t.registrationFee > 0 ? "₹${t.registrationFee}" : "Free", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        Text("Entry Fee", style: theme.textTheme.bodySmall?.copyWith(fontSize: 12)),
+                                        Text(t.registrationFee > 0 ? "₹${t.registrationFee}" : "Free", style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, fontSize: 16)),
                                       ],
                                     ),
                                   ),
@@ -215,8 +225,8 @@ class TournamentListScreen extends ConsumerWidget {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.center,
                                         children: [
-                                          Text("Prize Pool", style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-                                          Text(t.prizePool, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
+                                          Text("Prize Pool", style: theme.textTheme.bodySmall?.copyWith(fontSize: 12)),
+                                          Text(t.prizePool, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colorScheme.secondary)),
                                         ],
                                       ),
                                     ),
@@ -224,8 +234,8 @@ class TournamentListScreen extends ConsumerWidget {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.end,
                                       children: [
-                                        Text("Teams", style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-                                        Text("${t.registeredTeams.length}/${t.maxTeams}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        Text("Teams", style: theme.textTheme.bodySmall?.copyWith(fontSize: 12)),
+                                        Text("${t.registeredTeams.length}/${t.maxTeams}", style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, fontSize: 16)),
                                       ],
                                     ),
                                   ),
@@ -236,9 +246,9 @@ class TournamentListScreen extends ConsumerWidget {
                                 if (t.contactPhone.isNotEmpty)
                                   Row(
                                     children: [
-                                      Icon(Icons.phone, size: 16, color: Colors.grey.shade600),
+                                      Icon(Icons.phone, size: 16, color: theme.iconTheme.color),
                                       const SizedBox(width: 8),
-                                      Text(t.contactPhone, style: TextStyle(color: Colors.grey.shade800, fontSize: 13)),
+                                      Text(t.contactPhone, style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
                                     ],
                                   ),
                                 if (t.rules.isNotEmpty) ...[
@@ -246,9 +256,9 @@ class TournamentListScreen extends ConsumerWidget {
                                   Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Icon(Icons.rule, size: 16, color: Colors.grey.shade600),
+                                      Icon(Icons.rule, size: 16, color: theme.iconTheme.color),
                                       const SizedBox(width: 8),
-                                      Expanded(child: Text(t.rules, style: TextStyle(color: Colors.grey.shade800, fontSize: 13), maxLines: 2, overflow: TextOverflow.ellipsis)),
+                                      Expanded(child: Text(t.rules, style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13), maxLines: 2, overflow: TextOverflow.ellipsis)),
                                     ],
                                   ),
                                 ],
@@ -260,10 +270,10 @@ class TournamentListScreen extends ConsumerWidget {
                                   margin: const EdgeInsets.only(bottom: 4),
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: Colors.green.shade50,
+                                      color: colorScheme.secondaryContainer.withValues(alpha: 0.22),
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.green.shade100),
-                                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6, offset: const Offset(0, 2))],
+                                      border: Border.all(color: colorScheme.secondaryContainer.withValues(alpha: 0.45)),
+                                      boxShadow: [BoxShadow(color: theme.shadowColor.withValues(alpha: 0.03), blurRadius: 6, offset: const Offset(0, 2))],
                                   ),
                                   child: Row(
                                     children: [
@@ -271,7 +281,7 @@ class TournamentListScreen extends ConsumerWidget {
                                         child: liveScoreAsync.when(
                                           data: (score) {
                                             if (score == null) {
-                                              return Text('No live score', style: TextStyle(color: Colors.grey.shade700));
+                                              return Text('No live score', style: theme.textTheme.bodyMedium?.copyWith());
                                             }
                                             return Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,14 +294,14 @@ class TournamentListScreen extends ConsumerWidget {
                                                       const BlinkingDot(size: 10),
                                                       const SizedBox(width: 6),
                                                     ],
-                                                    Text(score.matchStatus, style: TextStyle(color: Colors.grey.shade700)),
+                                                    Text(score.matchStatus, style: theme.textTheme.bodyMedium?.copyWith()),
                                                   ],
                                                 ),
                                               ],
                                             );
                                           },
                                           loading: () => const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-                                          error: (_, __) => Text('Live score unavailable', style: TextStyle(color: Colors.grey.shade700)),
+                                          error: (_, __) => Text('Live score unavailable', style: theme.textTheme.bodyMedium?.copyWith()),
                                         ),
                                       ),
                                       Column(

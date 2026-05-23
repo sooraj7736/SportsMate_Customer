@@ -24,16 +24,18 @@ class ViewCricketLiveScoreScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final liveScoreAsync = ref.watch(cricketLiveScoreStreamProvider(tournament.id));
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cricket Live Score'),
-        backgroundColor: Colors.teal.shade800,
-        foregroundColor: Colors.white,
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
       ),
       body: Container(
-        color: Colors.grey.shade50,
+        color: theme.scaffoldBackgroundColor,
         child: liveScoreAsync.when(
           data: (liveScore) {
             if (liveScore == null) {
@@ -61,28 +63,22 @@ class ViewCricketLiveScoreScreen extends ConsumerWidget {
                 // --- Giant Score Dashboard ---
                 Card(
                   elevation: 4,
+                  color: colorScheme.primary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                   clipBehavior: Clip.antiAlias,
                   child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.teal.shade900, Colors.teal.shade700],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.sports_cricket, color: Colors.amber),
+                            Icon(Icons.sports_cricket, color: colorScheme.secondary),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 liveScore.matchStatus,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                                style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 16),
                               ),
                             ),
                           ],
@@ -111,7 +107,7 @@ class ViewCricketLiveScoreScreen extends ConsumerWidget {
                                       const SizedBox(width: 8),
                                       Text(
                                         '(${liveScore.overs}.${liveScore.balls} ov)',
-                                        style: TextStyle(fontSize: 18, color: Colors.teal.shade100, fontWeight: FontWeight.w600),
+                                        style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onPrimary.withValues(alpha: 0.9), fontWeight: FontWeight.w600),
                                       ),
                                     ],
                                   ),
@@ -152,17 +148,17 @@ class ViewCricketLiveScoreScreen extends ConsumerWidget {
                                     final isWicket = ball == 'W';
                                     final isBoundary = ball == '4' || ball == '6';
                                     final isExtra = ball.contains('wd') || ball.contains('nb');
-                                    
-                                    Color bg = Colors.white24;
-                                    Color txt = Colors.white;
-                                    
+
+                                    Color bg = colorScheme.onPrimary.withValues(alpha: 0.12);
+                                    Color txt = colorScheme.onPrimary;
+
                                     if (isWicket) {
-                                      bg = Colors.redAccent;
+                                      bg = colorScheme.error;
                                     } else if (isBoundary) {
-                                      bg = Colors.amber;
-                                      txt = Colors.teal.shade900;
+                                      bg = colorScheme.secondary;
+                                      txt = colorScheme.primary;
                                     } else if (isExtra) {
-                                      bg = Colors.teal.shade800;
+                                      bg = colorScheme.primary;
                                     }
                                     
                                     return Container(
@@ -194,20 +190,21 @@ class ViewCricketLiveScoreScreen extends ConsumerWidget {
                 if (showBatsmen) ...[
                   Card(
                     elevation: 0,
+                    color: theme.cardColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(color: Colors.grey.shade200),
+                      side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.12)),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Row(
+                          Row(
                             children: [
-                              Icon(Icons.sports_cricket, color: Colors.teal),
-                              SizedBox(width: 8),
-                              Text('Batsmen', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                              Icon(Icons.sports_cricket, color: colorScheme.primary),
+                              const SizedBox(width: 8),
+                              Text('Batsmen', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
                             ],
                           ),
                           const SizedBox(height: 14),
@@ -215,7 +212,7 @@ class ViewCricketLiveScoreScreen extends ConsumerWidget {
                           // Header row
                           Row(
                             children: [
-                              const Expanded(
+                                  const Expanded(
                                 flex: 4,
                                 child: Text('Batter', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey)),
                               ),
@@ -256,7 +253,7 @@ class ViewCricketLiveScoreScreen extends ConsumerWidget {
                                         liveScore.batsman1Name!,
                                         style: TextStyle(
                                           fontWeight: liveScore.batsman1OnStrike ? FontWeight.w900 : FontWeight.w600,
-                                          color: liveScore.batsman1OnStrike ? Colors.teal.shade900 : Colors.black87,
+                                          color: liveScore.batsman1OnStrike ? colorScheme.primary : theme.textTheme.bodyLarge?.color,
                                         ),
                                       ),
                                       if (liveScore.batsman1OnStrike)
@@ -273,7 +270,7 @@ class ViewCricketLiveScoreScreen extends ConsumerWidget {
                                     alignment: Alignment.centerRight,
                                     child: Text(
                                       liveScore.batsman1Runs.toString(),
-                                      style: TextStyle(fontWeight: liveScore.batsman1OnStrike ? FontWeight.bold : FontWeight.normal),
+                                      style: TextStyle(fontWeight: liveScore.batsman1OnStrike ? FontWeight.bold : FontWeight.normal, color: theme.textTheme.bodyLarge?.color),
                                     ),
                                   ),
                                 ),
@@ -357,20 +354,21 @@ class ViewCricketLiveScoreScreen extends ConsumerWidget {
                 if (showBowler) ...[
                   Card(
                     elevation: 0,
+                    color: theme.cardColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(color: Colors.grey.shade200),
+                      side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.12)),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Row(
+                          Row(
                             children: [
-                              Icon(Icons.sports_cricket_outlined, color: Colors.teal),
-                              SizedBox(width: 8),
-                              Text('Bowler', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                              Icon(Icons.sports_cricket_outlined, color: colorScheme.primary),
+                              const SizedBox(width: 8),
+                              Text('Bowler', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
                             ],
                           ),
                           const SizedBox(height: 14),
@@ -467,11 +465,11 @@ class ViewCricketLiveScoreScreen extends ConsumerWidget {
                 if (liveScore.note != null && liveScore.note!.isNotEmpty) ...[
                   Card(
                     elevation: 0,
+                    color: colorScheme.primaryContainer.withValues(alpha: 0.06),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(color: Colors.teal.shade100),
+                      side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.12)),
                     ),
-                    color: Colors.teal.shade50.withOpacity(0.4),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
@@ -479,18 +477,18 @@ class ViewCricketLiveScoreScreen extends ConsumerWidget {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.comment, color: Colors.teal.shade800, size: 20),
+                              Icon(Icons.comment, color: colorScheme.primary, size: 20),
                               const SizedBox(width: 8),
                               Text(
                                 'Match Commentary / Note',
-                                style: TextStyle(fontWeight: FontWeight.w700, color: Colors.teal.shade900, fontSize: 13),
+                                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: colorScheme.onPrimary),
                               ),
                             ],
                           ),
                           const SizedBox(height: 10),
                           Text(
                             liveScore.note!,
-                            style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.4),
+                            style: theme.textTheme.bodyMedium?.copyWith(color: theme.textTheme.bodyLarge?.color, height: 1.4),
                           ),
                         ],
                       ),
@@ -504,26 +502,20 @@ class ViewCricketLiveScoreScreen extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
                   child: Row(
                     children: [
-                      Icon(Icons.person_outline, size: 14, color: Colors.grey.shade600),
+                      Icon(Icons.person_outline, size: 14, color: theme.iconTheme.color),
                       const SizedBox(width: 4),
-                      Text(
-                        'Updated by ${liveScore.updatedByName}',
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontWeight: FontWeight.w500),
-                      ),
+                      Text('Updated by ${liveScore.updatedByName}', style: theme.textTheme.bodySmall?.copyWith(color: theme.textTheme.bodySmall?.color)),
                       const Spacer(),
-                      Icon(Icons.update, size: 14, color: Colors.grey.shade600),
+                      Icon(Icons.update, size: 14, color: theme.iconTheme.color),
                       const SizedBox(width: 4),
-                      Text(
-                        'Auto-refreshed live',
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontWeight: FontWeight.w500),
-                      ),
+                      Text('Auto-refreshed live', style: theme.textTheme.bodySmall?.copyWith(color: theme.textTheme.bodySmall?.color)),
                     ],
                   ),
                 ),
               ],
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator(color: Colors.teal)),
+          loading: () => Center(child: CircularProgressIndicator(color: colorScheme.primary)),
           error: (err, stack) => Center(child: Text('Failed to load live score: $err', style: const TextStyle(color: Colors.red))),
         ),
       ),

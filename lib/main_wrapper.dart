@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'features/home/presentation/home_screen.dart';
 import 'features/auth/presentation/login_screen.dart';
-import 'features/splash/presentation/nearplay_splash_screen.dart';
 
 import 'core/providers/common_providers.dart'; 
 
@@ -14,6 +13,8 @@ class MainWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final currentUser = ref.read(firebaseAuthProvider).currentUser;
+
     ref.listen<AsyncValue<User?>>(authStateProvider, (previous, next) {
       final prevUser = previous?.value;
       final nextUser = next.value;
@@ -34,7 +35,7 @@ class MainWrapper extends ConsumerWidget {
         if (user != null) return const HomeScreen();
         return const LoginScreen();
       },
-      loading: () => const NearPlaySplashScreen(isStatic: true),
+      loading: () => currentUser != null ? const HomeScreen() : const LoginScreen(),
       error: (e, trace) => Scaffold(body: Center(child: Text(e.toString()))),
     );
   }

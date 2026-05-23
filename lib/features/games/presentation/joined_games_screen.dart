@@ -10,6 +10,7 @@ class JoinedGamesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final joinedGamesAsync = ref.watch(joinedGamesProvider);
     final currentUser = FirebaseAuth.instance.currentUser;
     final currentUserId = currentUser?.uid;
@@ -22,7 +23,7 @@ class JoinedGamesScreen extends ConsumerWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 24),
                 padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: theme.cardColor,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: const [
                     BoxShadow(
@@ -32,13 +33,13 @@ class JoinedGamesScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                child: const Text(
+                child: Text(
                   'You haven\'t joined any games yet.\nExplore and join a game!',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+                    color: theme.textTheme.bodyMedium?.color,
                   ),
                 ),
               ),
@@ -60,10 +61,7 @@ class JoinedGamesScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(
-          child: Text(
-            'Error loading games: $err',
-            style: const TextStyle(color: Colors.black54),
-          ),
+          child: Text('Error loading games: $err', style: TextStyle(color: theme.textTheme.bodyMedium?.color)),
         ),
       );
   }
@@ -105,6 +103,7 @@ class _JoinedGameCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cardTheme = Theme.of(context);
     final guestCount = game.joinedPlayers
         .where((p) => p.uid == currentUserId && p.isGuest)
         .length;
@@ -145,10 +144,10 @@ class _JoinedGameCard extends StatelessWidget {
                     children: [
                       Text(
                         '${game.hostName}\'s ${game.sportType} Game',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 16,
-                          color: Colors.black87,
+                          color: cardTheme.textTheme.bodyLarge?.color,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -156,10 +155,10 @@ class _JoinedGameCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         game.locationName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w500,
                           fontSize: 12,
-                          color: Colors.black54,
+                          color: cardTheme.textTheme.bodySmall?.color,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -187,13 +186,13 @@ class _JoinedGameCard extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                const Icon(Icons.calendar_month_outlined, size: 16, color: Colors.black54),
+                Icon(Icons.calendar_month_outlined, size: 16, color: cardTheme.iconTheme.color),
                 const SizedBox(width: 6),
                 Text(
                   DateFormat('EEE, MMM d • h:mm a').format(gameDateTime),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Colors.black54,
+                    color: cardTheme.textTheme.bodySmall?.color,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -202,13 +201,13 @@ class _JoinedGameCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.schedule_outlined, size: 16, color: Colors.black54),
+                Icon(Icons.schedule_outlined, size: 16, color: cardTheme.iconTheme.color),
                 const SizedBox(width: 6),
                 Text(
                   '${_formatTime(game.startTime)} - ${_formatTime(game.endTime)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Colors.black54,
+                    color: cardTheme.textTheme.bodySmall?.color,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -221,7 +220,7 @@ class _JoinedGameCard extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF2FBF5),
+                  color: cardTheme.colorScheme.secondaryContainer.withValues(alpha: 0.22),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: _primaryGreen.withValues(alpha: 0.18)),
                 ),
@@ -229,16 +228,7 @@ class _JoinedGameCard extends StatelessWidget {
                   children: [
                     const Icon(Icons.people_outline, size: 16, color: _primaryGreen),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        participantSummary,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
+                    Expanded(child: Text(participantSummary, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: cardTheme.textTheme.bodyMedium?.color))),
                     const Icon(Icons.chevron_right, size: 16, color: _primaryGreen),
                   ],
                 ),
@@ -260,11 +250,12 @@ class _ParticipantsBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: theme.cardColor,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(20),
             topRight: Radius.circular(20),
@@ -277,12 +268,12 @@ class _ParticipantsBottomSheet extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Participants',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: Colors.black87,
+                    color: theme.textTheme.titleMedium?.color,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -296,7 +287,7 @@ class _ParticipantsBottomSheet extends StatelessWidget {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF5F7FB),
+                        color: theme.colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -310,10 +301,10 @@ class _ParticipantsBottomSheet extends StatelessWidget {
                           Expanded(
                             child: Text(
                               participant.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.black87,
+                                color: theme.textTheme.bodyLarge?.color,
                               ),
                             ),
                           ),

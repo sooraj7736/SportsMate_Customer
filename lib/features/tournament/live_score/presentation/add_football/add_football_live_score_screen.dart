@@ -335,6 +335,14 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final surfaceColor = theme.colorScheme.surface;
+    final surfaceVariant = theme.colorScheme.surfaceContainerHighest;
+    final primaryText = theme.textTheme.bodyLarge?.color ?? colorScheme.onSurface;
+    final secondaryText = theme.textTheme.bodyMedium?.color ?? colorScheme.onSurfaceVariant;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Football Live Desk')),
       body: ListView(
@@ -344,31 +352,39 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.footballHeaderGradientTop, AppColors.footballHeaderGradientBottom],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: isDark ? surfaceColor : null,
+              gradient: isDark
+                  ? null
+                  : const LinearGradient(
+                      colors: [AppColors.footballHeaderGradientTop, AppColors.footballHeaderGradientBottom],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
               borderRadius: BorderRadius.circular(24),
               boxShadow: [BoxShadow(color: AppColors.shadowDark, blurRadius: 18, offset: const Offset(0, 10))],
+              border: Border.all(color: theme.dividerColor.withValues(alpha: 0.45)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.sports_soccer, color: AppColors.footballHostTextColor),
+                    Icon(Icons.sports_soccer, color: primaryText),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         widget.tournament.tournamentName,
-                        style: const TextStyle(color: AppColors.footballHostTextColor, fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: primaryText, fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(color: AppColors.overlayWhiteMid, borderRadius: BorderRadius.circular(999)),
-                      child: Text(_saveLabel, style: const TextStyle(color: AppColors.footballHostTextColor, fontSize: 12)),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withValues(alpha: isDark ? 0.18 : 0.12),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.18)),
+                      ),
+                      child: Text(_saveLabel, style: TextStyle(color: primaryText, fontSize: 12)),
                     ),
                   ],
                 ),
@@ -382,11 +398,15 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(color: AppColors.overlayWhiteLight, borderRadius: BorderRadius.circular(14)),
-                          child: const Text('VS', style: TextStyle(color: AppColors.footballHostTextColor, fontWeight: FontWeight.w800)),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withValues(alpha: isDark ? 0.20 : 0.10),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: theme.dividerColor.withValues(alpha: 0.45)),
+                          ),
+                          child: Text('VS', style: TextStyle(color: primaryText, fontWeight: FontWeight.w800)),
                         ),
                         const SizedBox(height: 18),
-                        Text(_matchStatus, style: const TextStyle(color: AppColors.footballHostTextColor, fontWeight: FontWeight.w700)),
+                        Text(_matchStatus, style: TextStyle(color: primaryText, fontWeight: FontWeight.w700)),
                       ],
                     ),
                     const SizedBox(width: 12),
@@ -416,9 +436,9 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
                       return Padding(
                         padding: const EdgeInsets.only(right: 6),
                         child: ActionChip(
-                          backgroundColor: AppColors.footballStoppageChipBg,
-                          label: Text(label, style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold)),
-                          side: const BorderSide(color: Colors.white24),
+                          backgroundColor: theme.colorScheme.secondaryContainer,
+                          label: Text(label, style: TextStyle(color: colorScheme.onSecondaryContainer, fontSize: 12, fontWeight: FontWeight.bold)),
+                          side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.35)),
                           onPressed: () => _adjustTimer(_elapsedSeconds + (minutesToAdd * 60)),
                         ),
                       );
@@ -428,9 +448,9 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
                       return Padding(
                         padding: const EdgeInsets.only(right: 6),
                         child: ActionChip(
-                          backgroundColor: AppColors.footballPresetChipBg,
-                          label: Text(label, style: const TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.bold)),
-                          side: const BorderSide(color: Colors.amberAccent),
+                          backgroundColor: theme.colorScheme.tertiaryContainer,
+                          label: Text(label, style: TextStyle(color: colorScheme.onTertiaryContainer, fontSize: 11, fontWeight: FontWeight.bold)),
+                          side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.35)),
                           onPressed: () => _adjustTimer(targetMinutes * 60),
                         ),
                       );
@@ -439,9 +459,9 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
                     return Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.overlayWhiteLight,
+                        color: surfaceVariant,
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: Colors.white24),
+                        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.45)),
                       ),
                       child: Column(
                         children: [
@@ -450,17 +470,17 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
                             children: [
                               Row(
                                 children: [
-                                  const Icon(Icons.timer_outlined, color: AppColors.footballHostTextColor, size: 20),
+                                  Icon(Icons.timer_outlined, color: primaryText, size: 20),
                                   const SizedBox(width: 8),
                                   Text(
                                     _isTimerRunning ? 'Match Timer Running' : 'Match Timer Paused',
-                                    style: const TextStyle(color: AppColors.footballHostTextColor, fontWeight: FontWeight.bold, fontSize: 13),
+                                    style: TextStyle(color: primaryText, fontWeight: FontWeight.bold, fontSize: 13),
                                   ),
                                 ],
                               ),
                               Text(
                                 'Limit: $matchDuration Mins',
-                                style: const TextStyle(color: AppColors.subTextDark, fontSize: 12, fontWeight: FontWeight.w600),
+                                style: TextStyle(color: secondaryText, fontSize: 12, fontWeight: FontWeight.w600),
                               ),
                             ],
                           ),
@@ -469,7 +489,7 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
                             borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
                               value: (_elapsedSeconds / (matchDuration * 60)).clamp(0.0, 1.0),
-                              backgroundColor: Colors.white12,
+                              backgroundColor: theme.dividerColor.withValues(alpha: 0.18),
                               valueColor: const AlwaysStoppedAnimation<Color>(AppColors.footballClockGlow),
                               minHeight: 4,
                             ),
@@ -488,18 +508,18 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
                                       onPressed: _toggleTimer,
                                       icon: Icon(
                                         _isTimerRunning ? Icons.pause : Icons.play_arrow,
-                                        color: Colors.white,
+                                        color: colorScheme.onPrimary,
                                         size: 20,
                                       ),
                                       label: Text(
                                         _isTimerRunning
                                             ? 'PAUSE TIMER'
                                             : (_elapsedSeconds == 0 ? 'START MATCH' : 'RESUME TIMER'),
-                                        style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5, fontSize: 12),
+                                        style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5, fontSize: 12, color: colorScheme.onPrimary),
                                       ),
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: _isTimerRunning ? AppColors.footballTimerRunningBg : AppColors.footballTimerStoppedBg,
-                                        foregroundColor: Colors.white,
+                                        backgroundColor: _isTimerRunning ? colorScheme.primary : colorScheme.secondary,
+                                        foregroundColor: colorScheme.onPrimary,
                                         padding: const EdgeInsets.symmetric(vertical: 12),
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                         elevation: 2,
@@ -510,17 +530,17 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
                                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                       children: [
                                         IconButton(
-                                          icon: const Icon(Icons.replay, color: Colors.white, size: 20),
+                                          icon: Icon(Icons.replay, color: primaryText, size: 20),
                                           tooltip: 'Reset to 0:00',
                                           onPressed: () => _adjustTimer(0),
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.remove, color: Colors.white, size: 18),
+                                          icon: Icon(Icons.remove, color: primaryText, size: 18),
                                           tooltip: '-1 Min',
                                           onPressed: () => _adjustTimer(_elapsedSeconds - 60),
                                         ),
                                         IconButton(
-                                          icon: const Icon(Icons.add, color: Colors.white, size: 18),
+                                          icon: Icon(Icons.add, color: primaryText, size: 18),
                                           tooltip: '+1 Min',
                                           onPressed: () => _adjustTimer(_elapsedSeconds + 60),
                                         ),
@@ -541,12 +561,12 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
                                       alignment: Alignment.center,
                                       padding: const EdgeInsets.symmetric(vertical: 16),
                                       decoration: BoxDecoration(
-                                        color: Colors.black,
+                                        color: theme.colorScheme.surface,
                                         borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: Color.fromRGBO(105, 240, 174, 0.4), width: 1.5),
+                                        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.35), width: 1.5),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Color.fromRGBO(105, 240, 174, 0.2),
+                                            color: theme.colorScheme.primary.withValues(alpha: 0.16),
                                             blurRadius: 10,
                                             spreadRadius: 2,
                                           ),
@@ -575,21 +595,21 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text(
+                                  Text(
                                     'Add Stoppage / Injury Time',
-                                    style: TextStyle(color: AppColors.subTextDark, fontSize: 11, fontWeight: FontWeight.bold),
+                                    style: TextStyle(color: secondaryText, fontSize: 11, fontWeight: FontWeight.bold),
                                   ),
                                   if (minutes == matchDuration ~/ 2 || minutes == matchDuration)
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: AppColors.stoppageRedBg,
+                                        color: theme.colorScheme.errorContainer,
                                         borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(color: Colors.redAccent, width: 0.5),
+                                        border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.5), width: 0.5),
                                       ),
-                                      child: const Text(
+                                      child: Text(
                                         'Stoppage Phase',
-                                        style: TextStyle(color: Colors.redAccent, fontSize: 8, fontWeight: FontWeight.bold),
+                                        style: TextStyle(color: colorScheme.onErrorContainer, fontSize: 8, fontWeight: FontWeight.bold),
                                       ),
                                     ),
                                 ],
@@ -624,15 +644,15 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.footballMatchCardBg,
+              color: surfaceColor,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.footballBorderColor),
+              border: Border.all(color: theme.dividerColor.withValues(alpha: 0.45)),
               boxShadow: [BoxShadow(color: AppColors.shadowLight, blurRadius: 12, offset: const Offset(0, 4))],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Match State', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text('Match State', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: primaryText)),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
@@ -649,14 +669,14 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppColors.footballIncidentsBg,
+                    color: theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AppColors.footballIncidentsBorder),
+                    border: Border.all(color: theme.dividerColor.withValues(alpha: 0.45)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Incidents', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text('Incidents', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: primaryText)),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
@@ -760,7 +780,7 @@ class _AddFootballLiveScoreScreenState extends ConsumerState<AddFootballLiveScor
                 const SizedBox(height: 10),
                 Text(
                   _isSaving ? 'Saving changes...' : 'Changes are saved automatically.',
-                  style: const TextStyle(color: AppColors.subTextLight),
+                  style: TextStyle(color: secondaryText),
                 ),
               ],
             ),

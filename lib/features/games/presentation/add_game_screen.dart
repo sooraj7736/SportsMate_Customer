@@ -85,6 +85,8 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final state = ref.watch(addGameControllerProvider);
     final notifier = ref.read(addGameControllerProvider.notifier);
     final userProfile = ref.watch(userProfileProvider).value;
@@ -137,17 +139,17 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? theme.scaffoldBackgroundColor,
         elevation: 0.5,
-        title: const Text(
+        title: Text(
           "Host Match Settings",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          icon: Icon(Icons.arrow_back_ios, color: theme.iconTheme.color),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -155,7 +157,7 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
         padding: const EdgeInsets.all(16.0),
         children: [
           // 1. Sport Type & Location
-          _buildCardFrame("Match Context", [
+          _buildCardFrame(context, "Match Context", [
             DropdownButtonFormField<String>(
               value: selectedSport,
               decoration: const InputDecoration(
@@ -171,6 +173,7 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
               onChanged: (val) => notifier.updateSport(val!),
             ),
             const Divider(),
+            const SizedBox(height: 8),
             if (_selectedLocationId != null)
               DropdownButtonFormField<String>(
                 isExpanded: true,
@@ -219,7 +222,7 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
                   });
                 },
               ),
-            if (_isOtherLocation) ...[
+              if (_isOtherLocation) ...[
               const Divider(),
               TextFormField(
                 controller: _customAddressController,
@@ -257,19 +260,19 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _latitude != null
                       ? const Color(0xFF1DB954)
-                      : Colors.blue,
-                  foregroundColor: Colors.white,
+                      : colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                 ),
               ),
             ],
           ]),
 
           // 2. Horizontal Calendar Row
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
             child: Text(
               "Select Date",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 15),
             ),
           ),
           SizedBox(
@@ -286,28 +289,26 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
                     width: 60,
                     margin: const EdgeInsets.only(right: 8.0),
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? const Color(0xFF1DB954)
-                          : Colors.white,
+                      color: isSelected ? colorScheme.primary : theme.cardColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[200]!),
+                      border: Border.all(color: theme.dividerColor),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           DateFormat('E').format(day).toUpperCase(),
-                          style: TextStyle(
+                          style: theme.textTheme.bodySmall?.copyWith(
                             fontSize: 11,
-                            color: isSelected ? Colors.white70 : Colors.grey,
+                            color: isSelected ? colorScheme.onPrimary : theme.textTheme.bodySmall?.color,
                           ),
                         ),
                         Text(
                           day.day.toString(),
-                          style: TextStyle(
+                          style: theme.textTheme.titleLarge?.copyWith(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: isSelected ? Colors.white : Colors.black,
+                            color: isSelected ? colorScheme.onPrimary : theme.textTheme.bodyLarge?.color,
                           ),
                         ),
                       ],
@@ -320,7 +321,7 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
           const SizedBox(height: 16),
 
           // 3. Time Slot
-          _buildCardFrame("Time Slot", [
+          _buildCardFrame(context, "Time Slot", [
             const Text(
               "Choose starting and ending time",
               style: TextStyle(fontSize: 14),
@@ -350,7 +351,7 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
           ]),
 
           // 4. Match Privacy Access
-          _buildCardFrame("Game Access", [
+          _buildCardFrame(context, "Game Access", [
             const Text(
               "Who can discover this game?",
               style: TextStyle(fontSize: 14),
@@ -370,7 +371,7 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
           ]),
 
           // 5. Counters and Options Matrix
-          _buildCardFrame("Players Configuration", [
+          _buildCardFrame(context, "Players Configuration", [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -410,7 +411,7 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
           ]),
 
           // 6. Costing & Gear Toggles
-          _buildCardFrame("Pricing & Setup", [
+          _buildCardFrame(context, "Pricing & Setup", [
             _buildToggleRow(
               "Is this a Paid Match booking?",
               state.isPaid,
@@ -550,16 +551,17 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
                     }
                   },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1DB954),
+              backgroundColor: colorScheme.primary,
               minimumSize: const Size.fromHeight(52),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
+              foregroundColor: colorScheme.onPrimary,
             ),
-            child: const Text(
+            child: Text(
               "Create Match Event",
               style: TextStyle(
-                color: Colors.white,
+                color: colorScheme.onPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -575,10 +577,12 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
     required String value,
     required VoidCallback onPressed,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return OutlinedButton(
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
-        side: BorderSide(color: Colors.grey[300]!),
+        side: BorderSide(color: theme.dividerColor),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
@@ -587,19 +591,18 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
+            style: theme.textTheme.bodySmall?.copyWith(fontSize: 12),
           ),
           const SizedBox(height: 4),
           Row(
             children: [
-              const Icon(Icons.access_time, size: 16, color: Color(0xFF1DB954)),
+              Icon(Icons.access_time, size: 16, color: colorScheme.primary),
               const SizedBox(width: 6),
               Text(
                 value,
-                style: const TextStyle(
+                style: theme.textTheme.bodyLarge?.copyWith(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
                 ),
               ),
             ],
@@ -629,14 +632,16 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
     return "$hour:$minute";
   }
 
-  // Visual helper grouping structural rows into card panels matching reference screenshots
-  static Widget _buildCardFrame(String title, List<Widget> children) {
+  // Themed helper grouping structural rows into card panels
+  static Widget _buildCardFrame(BuildContext context, String title, List<Widget> children) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Card(
-      color: Colors.white,
+      color: theme.cardColor,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[100]!),
+        side: BorderSide(color: theme.dividerColor),
       ),
       margin: const EdgeInsets.only(bottom: 16.0),
       child: Padding(
@@ -646,10 +651,10 @@ class _AddGameScreenState extends ConsumerState<AddGameScreen> {
           children: [
             Text(
               title,
-              style: const TextStyle(
+              style: theme.textTheme.labelSmall?.copyWith(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey,
+                color: theme.textTheme.bodySmall?.color,
               ),
             ),
             const SizedBox(height: 12),

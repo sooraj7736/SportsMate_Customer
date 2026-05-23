@@ -39,8 +39,29 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
   DateTime? _selectedDay;
   String? _selectedSport;
   int? _selectedDistance;
+  late final ScrollController _dayStripController;
 
   static const Color _primaryGreen = Color(0xFF1DB954);
+
+  static const double _dayTileWidth = 56;
+  static const double _dayTileSpacing = 10;
+  static const double _dayTileExtent = _dayTileWidth + _dayTileSpacing;
+
+  @override
+  void initState() {
+    super.initState();
+    final today = DateTime.now();
+    final todayIndex = today.day - 1;
+    _dayStripController = ScrollController(
+      initialScrollOffset: todayIndex > 0 ? todayIndex * _dayTileExtent : 0,
+    );
+  }
+
+  @override
+  void dispose() {
+    _dayStripController.dispose();
+    super.dispose();
+  }
 
   double _calculateDistance(
     double lat1,
@@ -56,23 +77,10 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
     return 12742 * asin(sqrt(a));
   }
 
-  DateTime? _parseGameStartDate(GameEntity game) {
-    final parts = game.startTime.split(':');
-    if (parts.length != 2) return null;
-    final hour = int.tryParse(parts[0]);
-    final minute = int.tryParse(parts[1]);
-    if (hour == null || minute == null) return null;
-    return DateTime(
-      game.date.year,
-      game.date.month,
-      game.date.day,
-      hour,
-      minute,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final gamesStream = ref.watch(allGamesStreamProvider);
     final activeAddressMap = ref.watch(activeAddressStreamProvider).value;
     final activeAddress = activeAddressMap != null
@@ -81,6 +89,12 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
     final sportsAsync = ref.watch(sportsCatalogProvider);
     final availableSports = sportsAsync.asData?.value ?? const [];
     final sportNames = ['All', ...availableSports.map((sport) => sport.name)];
+    final todayStart = DateTime.now();
+    final currentDayStart = DateTime(
+      todayStart.year,
+      todayStart.month,
+      todayStart.day,
+    );
     final selectedSport =
         _selectedSport != null && sportNames.contains(_selectedSport)
         ? _selectedSport
@@ -88,20 +102,19 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
     final monthDays = _buildCurrentMonthDays();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor ?? theme.scaffoldBackgroundColor,
         elevation: 0,
         titleSpacing: 16,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Find Games',
-              style: TextStyle(
+              style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w800,
                 fontSize: 22,
-                color: Colors.black87,
               ),
             ),
             const SizedBox(height: 2),
@@ -120,9 +133,7 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                   Icon(
                     Icons.location_on,
                     size: 13,
-                    color: activeAddress != null
-                        ? _primaryGreen
-                        : Colors.redAccent,
+                    color: activeAddress != null ? _primaryGreen : colorScheme.error,
                   ),
                   const SizedBox(width: 4),
                   Flexible(
@@ -132,11 +143,9 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                           : 'No active address (Tap to set)',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 12,
-                        color: activeAddress != null
-                            ? Colors.black54
-                            : Colors.redAccent,
+                        color: activeAddress != null ? theme.textTheme.bodySmall?.color : colorScheme.error,
                         fontWeight: FontWeight.w600,
                         decoration: TextDecoration.underline,
                       ),
@@ -156,10 +165,10 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                 alignment: Alignment.center,
                 children: [
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.mail_outline_rounded,
                       size: 26,
-                      color: Colors.black87,
+                      color: theme.iconTheme.color,
                     ),
                     onPressed: () {
                       Navigator.push(
@@ -176,8 +185,8 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                       top: 8,
                       child: Container(
                         padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.blueAccent,
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary,
                           shape: BoxShape.circle,
                         ),
                         constraints: const BoxConstraints(
@@ -230,6 +239,7 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
         onPressed: () {
           Navigator.push(
             context,
@@ -237,6 +247,7 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
           );
         },
         backgroundColor: _primaryGreen,
+        foregroundColor: colorScheme.onPrimary,
         icon: const Icon(Icons.add, size: 24),
         label: const Text(
           'Add Game',
@@ -289,18 +300,14 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                     margin: const EdgeInsets.fromLTRB(14, 14, 14, 12),
                     padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFE8F8F1), Color(0xFFF0FDF5)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      color: theme.cardColor,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: _primaryGreen.withValues(alpha: 0.25),
+                        color: colorScheme.primary.withOpacity(0.12),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: _primaryGreen.withValues(alpha: 0.08),
+                          color: colorScheme.primary.withOpacity(0.06),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -322,10 +329,9 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                               ),
                               child: Text(
                                 DateFormat('MMMM yyyy').format(DateTime.now()),
-                                style: const TextStyle(
+                                style: theme.textTheme.titleSmall?.copyWith(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w800,
-                                  color: Colors.black87,
                                 ),
                               ),
                             ),
@@ -338,11 +344,10 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                           ],
                         ),
                         const SizedBox(height: 6),
-                        const Text(
+                        Text(
                           'Tap a day to filter games.',
-                          style: TextStyle(
+                          style: theme.textTheme.bodySmall?.copyWith(
                             fontSize: 12,
-                            color: Colors.black54,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -350,12 +355,14 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                         SizedBox(
                           height: 74,
                           child: ListView.separated(
+                            controller: _dayStripController,
                             scrollDirection: Axis.horizontal,
                             itemCount: monthDays.length,
                             separatorBuilder: (_, __) =>
                                 const SizedBox(width: 10),
                             itemBuilder: (context, index) {
                               final day = monthDays[index];
+                              final isPastDay = day.isBefore(currentDayStart);
                               final isSelected =
                                   _selectedDay != null &&
                                   DateUtils.isSameDay(day, _selectedDay);
@@ -365,11 +372,13 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                               );
 
                               return InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    _selectedDay = day;
-                                  });
-                                },
+                                onTap: isPastDay
+                                    ? null
+                                    : () {
+                                        setState(() {
+                                          _selectedDay = day;
+                                        });
+                                      },
                                 borderRadius: BorderRadius.circular(16),
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 180),
@@ -377,48 +386,43 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 10,
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? _primaryGreen
-                                        : const Color(0xFFF7F9FC),
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? _primaryGreen
-                                          : isToday
-                                          ? _primaryGreen.withValues(
-                                              alpha: 0.35,
-                                            )
-                                          : Colors.black12,
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? colorScheme.primary : theme.cardColor,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? colorScheme.primary
+                                            : isToday
+                                                ? colorScheme.primary.withOpacity(0.35)
+                                                : theme.dividerColor,
+                                      ),
                                     ),
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        DateFormat(
-                                          'E',
-                                        ).format(day).toUpperCase(),
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                          color: isSelected
-                                              ? Colors.white70
-                                              : Colors.black54,
+                                  child: Opacity(
+                                    opacity: isPastDay ? 0.35 : 1,
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          DateFormat(
+                                            'E',
+                                          ).format(day).toUpperCase(),
+                                          style: theme.textTheme.bodySmall?.copyWith(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: isSelected ? colorScheme.onPrimary : theme.textTheme.bodySmall?.color,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        day.day.toString(),
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w800,
-                                          color: isSelected
-                                              ? Colors.white
-                                              : Colors.black87,
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          day.day.toString(),
+                                          style: theme.textTheme.titleLarge?.copyWith(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w800,
+                                            color: isSelected ? colorScheme.onPrimary : theme.textTheme.bodyLarge?.color,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               );
@@ -437,16 +441,16 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                     });
                                   },
                             style: TextButton.styleFrom(
-                              foregroundColor: _primaryGreen,
+                              foregroundColor: colorScheme.primary,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
                                 vertical: 8,
                               ),
                             ),
-                            icon: const Icon(Icons.refresh, size: 16),
-                            label: const Text(
+                            icon: Icon(Icons.refresh, size: 16, color: colorScheme.primary),
+                            label: Text(
                               'Reset',
-                              style: TextStyle(fontWeight: FontWeight.w700),
+                              style: TextStyle(fontWeight: FontWeight.w700, color: colorScheme.primary),
                             ),
                           ),
                         ),
@@ -454,10 +458,10 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                           const SizedBox(height: 2),
                           Text(
                             'Showing games for ${DateFormat('EEE, MMM d').format(_selectedDay!)}',
-                            style: const TextStyle(
+                            style: theme.textTheme.bodySmall?.copyWith(
                               fontSize: 12.5,
-                              color: Colors.black54,
                               fontWeight: FontWeight.w500,
+                              color: theme.textTheme.bodySmall?.color,
                             ),
                           ),
                         ],
@@ -468,12 +472,12 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                     padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                     child: Row(
                       children: [
-                        const Text(
+                        Text(
                           'Dist:',
-                          style: TextStyle(
+                          style: theme.textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
-                            color: Colors.black87,
+                            color: theme.textTheme.bodyLarge?.color,
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -483,7 +487,7 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                             vertical: 0,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
+                            color: theme.cardColor,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: DropdownButton<int?>(
@@ -516,25 +520,25 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                 _selectedDistance = value;
                               });
                             },
-                            style: const TextStyle(
+                            style: theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                               fontSize: 12,
-                              color: Colors.black87,
+                              color: theme.textTheme.bodyMedium?.color,
                             ),
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.expand_more,
                               size: 18,
-                              color: Colors.black54,
+                              color: theme.iconTheme.color,
                             ),
                           ),
                         ),
                         const SizedBox(width: 16),
-                        const Text(
+                        Text(
                           'Sport:',
-                          style: TextStyle(
+                          style: theme.textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
-                            color: Colors.black87,
+                            color: theme.textTheme.bodyLarge?.color,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -544,7 +548,7 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                             vertical: 0,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
+                            color: theme.cardColor,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: DropdownButton<String>(
@@ -563,15 +567,15 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                 _selectedSport = value == 'All' ? null : value;
                               });
                             },
-                            style: const TextStyle(
+                            style: theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                               fontSize: 12,
-                              color: Colors.black87,
+                              color: theme.textTheme.bodyMedium?.color,
                             ),
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.expand_more,
                               size: 18,
-                              color: Colors.black54,
+                              color: theme.iconTheme.color,
                             ),
                           ),
                         ),
@@ -589,25 +593,20 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF9E6),
+                        color: colorScheme.errorContainer.withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFFE599)),
+                        border: Border.all(color: colorScheme.errorContainer.withValues(alpha: 0.35)),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.warning_amber_rounded,
-                            color: Color(0xFFB27A00),
-                            size: 20,
-                          ),
+                          Icon(Icons.warning_amber_rounded, color: colorScheme.error, size: 20),
                           const SizedBox(width: 10),
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               'Please set an active address to filter games by distance.',
-                              style: TextStyle(
+                              style: theme.textTheme.bodySmall?.copyWith(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF664600),
                               ),
                             ),
                           ),
@@ -623,7 +622,7 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                               );
                             },
                             style: TextButton.styleFrom(
-                              foregroundColor: const Color(0xFFB27A00),
+                              foregroundColor: colorScheme.error,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
                                 vertical: 4,
@@ -651,7 +650,7 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                               ),
                               padding: const EdgeInsets.all(22),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: theme.cardColor,
                                 borderRadius: BorderRadius.circular(20),
                                 boxShadow: const [
                                   BoxShadow(
@@ -666,10 +665,9 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                     ? 'No matches yet. Be the first to add a game!'
                                     : 'No matches found for this day.',
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                style: theme.textTheme.bodyMedium?.copyWith(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
                                 ),
                               ),
                             ),
@@ -709,7 +707,7 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 14),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFFAFBFC),
+                                  color: theme.cardColor,
                                   borderRadius: BorderRadius.circular(18),
                                   boxShadow: const [
                                     BoxShadow(
@@ -718,9 +716,7 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                       offset: Offset(0, 4),
                                     ),
                                   ],
-                                  border: Border.all(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                  ),
+                                  border: Border.all(color: theme.dividerColor.withValues(alpha: 0.35)),
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(14.0),
@@ -752,11 +748,10 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                                 children: [
                                                   TextSpan(
                                                     text: "${game.hostName}'s ",
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w800,
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.w800,
                                                       fontSize: 16,
-                                                      color: Colors.black87,
+                                                      color: theme.textTheme.bodyLarge?.color,
                                                     ),
                                                   ),
                                                   TextSpan(
@@ -770,13 +765,11 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                                     ),
                                                   ),
                                                   TextSpan(
-                                                    text:
-                                                        ' at ${game.locationName}',
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w600,
+                                                    text: ' at ${game.locationName}',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.w600,
                                                       fontSize: 15,
-                                                      color: Colors.black54,
+                                                      color: theme.textTheme.bodyMedium?.color,
                                                     ),
                                                   ),
                                                 ],
@@ -792,8 +785,8 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                             ),
                                             decoration: BoxDecoration(
                                               color: isPublic
-                                                  ? Colors.blue[50]
-                                                  : Colors.amber[50],
+                                                  ? colorScheme.primary.withValues(alpha: 0.08)
+                                                  : colorScheme.secondary.withValues(alpha: 0.08),
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                             ),
@@ -803,8 +796,8 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w700,
                                                 color: isPublic
-                                                    ? Colors.blue[700]
-                                                    : Colors.amber[900],
+                                                    ? colorScheme.primary
+                                                    : colorScheme.secondary,
                                               ),
                                             ),
                                           ),
@@ -816,57 +809,46 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                         runSpacing: 8,
                                         children: [
                                           _buildInfoChip(
+                                            context: context,
                                             icon: Icons.calendar_month_outlined,
                                             label: DateFormat(
                                               'EEE, MMM d',
                                             ).format(game.date),
-                                            backgroundColor: const Color(
-                                              0xFFF1F5FF,
-                                            ),
-                                            foregroundColor: const Color(
-                                              0xFF3451B2,
-                                            ),
+                                            backgroundColor: colorScheme.primaryContainer.withValues(alpha: 0.12),
+                                            foregroundColor: colorScheme.primary,
                                           ),
                                           if (game.startTime.isNotEmpty &&
                                               game.endTime.isNotEmpty)
                                             _buildInfoChip(
+                                              context: context,
                                               icon: Icons.access_time,
                                               label:
                                                   '${_formatStoredTime(game.startTime)} - ${_formatStoredTime(game.endTime)}',
-                                              backgroundColor: const Color(
-                                                0xFFF2FBF5,
-                                              ),
-                                              foregroundColor: _primaryGreen,
+                                              backgroundColor: colorScheme.secondaryContainer.withValues(alpha: 0.12),
+                                              foregroundColor: colorScheme.secondary,
                                             ),
                                           if (distance != null)
                                             _buildInfoChip(
+                                              context: context,
                                               icon:
                                                   Icons.directions_run_outlined,
                                               label:
                                                   '${distance.toStringAsFixed(1)} km away',
-                                              backgroundColor: const Color(
-                                                0xFFFFF2E6,
-                                              ),
-                                              foregroundColor: const Color(
-                                                0xFFE65C00,
-                                              ),
+                                              backgroundColor: colorScheme.tertiaryContainer.withValues(alpha: 0.12),
+                                              foregroundColor: colorScheme.tertiary,
                                             ),
                                         ],
                                       ),
                                       const SizedBox(height: 10),
                                       Row(
                                         children: [
-                                          const Icon(
-                                            Icons.place_outlined,
-                                            size: 16,
-                                            color: Colors.black54,
-                                          ),
+                                          Icon(Icons.place_outlined, size: 16, color: theme.iconTheme.color),
                                           const SizedBox(width: 6),
                                           Expanded(
                                             child: Text(
                                               game.locationName,
-                                              style: const TextStyle(
-                                                color: Colors.black87,
+                                              style: TextStyle(
+                                                color: theme.textTheme.bodyLarge?.color,
                                                 fontWeight: FontWeight.w500,
                                               ),
                                             ),
@@ -890,9 +872,7 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                           LinearProgressIndicator(
                                             value: progressValue,
                                             minHeight: 6,
-                                            backgroundColor: const Color(
-                                              0xFFE7ECEF,
-                                            ),
+                                            backgroundColor: theme.dividerColor.withValues(alpha: 0.12),
                                             valueColor:
                                                 const AlwaysStoppedAnimation<
                                                   Color
@@ -968,10 +948,8 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                                       ),
                                                     ),
                                                     style: ElevatedButton.styleFrom(
-                                                      backgroundColor:
-                                                          Colors.blueAccent,
-                                                      foregroundColor:
-                                                          Colors.white,
+                                                      backgroundColor: colorScheme.primary,
+                                                      foregroundColor: colorScheme.onPrimary,
                                                       padding:
                                                           const EdgeInsets.symmetric(
                                                             vertical: 12,
@@ -1007,10 +985,8 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                                       ),
                                                     ),
                                                     style: ElevatedButton.styleFrom(
-                                                      backgroundColor:
-                                                          Colors.indigoAccent,
-                                                      foregroundColor:
-                                                          Colors.white,
+                                                      backgroundColor: colorScheme.secondary,
+                                                      foregroundColor: colorScheme.onSecondary,
                                                       padding:
                                                           const EdgeInsets.symmetric(
                                                             vertical: 12,
@@ -1032,13 +1008,8 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                               child: OutlinedButton(
                                                 onPressed: null,
                                                 style: OutlinedButton.styleFrom(
-                                                  backgroundColor: const Color(
-                                                    0xFFE8F5E9,
-                                                  ),
-                                                  side: const BorderSide(
-                                                    color: Color(0xFF81C784),
-                                                    width: 1.5,
-                                                  ),
+                                                  backgroundColor: colorScheme.secondaryContainer,
+                                                  side: BorderSide(color: colorScheme.secondary, width: 1.5),
                                                   padding:
                                                       const EdgeInsets.symmetric(
                                                         vertical: 12,
@@ -1050,10 +1021,10 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                                         ),
                                                   ),
                                                 ),
-                                                child: const Text(
+                                                child: Text(
                                                   'Already Joined',
                                                   style: TextStyle(
-                                                    color: Color(0xFF2E7D32),
+                                                    color: colorScheme.onSecondary,
                                                     fontWeight: FontWeight.w800,
                                                   ),
                                                 ),
@@ -1071,13 +1042,10 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
                                                             ref,
                                                           ),
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor:
-                                                      _primaryGreen,
-                                                  foregroundColor: Colors.white,
-                                                  disabledBackgroundColor:
-                                                      Colors.grey[300],
-                                                  disabledForegroundColor:
-                                                      Colors.black54,
+                                                  backgroundColor: _primaryGreen,
+                                                  foregroundColor: colorScheme.onPrimary,
+                                                  disabledBackgroundColor: theme.disabledColor,
+                                                  disabledForegroundColor: theme.textTheme.bodySmall?.color,
                                                   padding:
                                                       const EdgeInsets.symmetric(
                                                         vertical: 12,
@@ -1139,28 +1107,34 @@ class _GamesFeedScreenState extends ConsumerState<GamesFeedScreen> {
   }
 
   static Widget _buildInfoChip({
+    required BuildContext context,
     required IconData icon,
     required String label,
-    required Color backgroundColor,
-    required Color foregroundColor,
+    Color? backgroundColor,
+    Color? foregroundColor,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final fg = foregroundColor ?? theme.textTheme.bodySmall?.color ?? colorScheme.onSurface;
+    final bg = backgroundColor ?? theme.dividerColor.withValues(alpha: 0.12);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: bg,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: foregroundColor),
+          Icon(icon, size: 14, color: fg),
           const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: foregroundColor,
+              color: fg,
             ),
           ),
         ],

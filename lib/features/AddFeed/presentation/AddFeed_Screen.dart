@@ -103,12 +103,12 @@ class _AddFeedScreenState extends ConsumerState<AddFeedScreen> {
     final userProfileAsync = ref.watch(userProfileProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.black),
+          icon: Icon(Icons.close, color: Theme.of(context).iconTheme.color),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -122,8 +122,8 @@ class _AddFeedScreenState extends ConsumerState<AddFeedScreen> {
                 children: [
                   CircleAvatar(
                     radius: 24,
-                    backgroundImage: user?.profilePic != null 
-                        ? NetworkImage(user!.profilePic!) 
+                    backgroundImage: user?.profilePic != null
+                        ? NetworkImage(user!.profilePic!)
                         : NetworkImage('https://i.pravatar.cc/150?u=${user?.uid}') as ImageProvider,
                   ),
                   const SizedBox(width: 12),
@@ -132,23 +132,24 @@ class _AddFeedScreenState extends ConsumerState<AddFeedScreen> {
                     children: [
                       Text(
                         user?.name ?? "Athlete",
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
+                      const SizedBox(height: 6),
                       Container(
                         height: 30,
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade400),
+                          border: Border.all(color: Theme.of(context).dividerColor),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
                             value: _visibility,
-                            icon: const Icon(Icons.arrow_drop_down, size: 20),
+                            icon: Icon(Icons.arrow_drop_down, size: 20, color: Theme.of(context).iconTheme.color),
                             items: ["Everyone", "Friends Only"].map((String value) {
                               return DropdownMenuItem<String>(
                                 value: value,
-                                child: Text(value, style: const TextStyle(fontSize: 12)),
+                                child: Text(value, style: Theme.of(context).textTheme.bodySmall),
                               );
                             }).toList(),
                             onChanged: (newValue) {
@@ -172,7 +173,7 @@ class _AddFeedScreenState extends ConsumerState<AddFeedScreen> {
                     border: InputBorder.none,
                     hintStyle: TextStyle(fontSize: 18),
                   ),
-                  style: const TextStyle(fontSize: 18),
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 18),
                 ),
               ),
               if (_image != null)
@@ -197,10 +198,10 @@ class _AddFeedScreenState extends ConsumerState<AddFeedScreen> {
                           _image = null;
                           _isPostEnabled = _contentController.text.trim().isNotEmpty;
                         }),
-                        child: const CircleAvatar(
-                          backgroundColor: Colors.black54,
+                        child: CircleAvatar(
+                          backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                           radius: 12,
-                          child: Icon(Icons.close, color: Colors.white, size: 16),
+                          child: Icon(Icons.close, color: Theme.of(context).colorScheme.onPrimary, size: 16),
                         ),
                       ),
                     ),
@@ -212,28 +213,27 @@ class _AddFeedScreenState extends ConsumerState<AddFeedScreen> {
                 child: Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.image_outlined, color: Colors.blue, size: 30),
+                      icon: Icon(Icons.image_outlined, color: Theme.of(context).colorScheme.primary, size: 30),
                       onPressed: _pickImage,
                     ),
                     const Spacer(),
                     ElevatedButton(
                       onPressed: (_isPostEnabled && !_isLoading) ? _handlePost : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: Colors.grey.shade300,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       ),
                       child: _isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blue),
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimary),
                             )
-                          : const Text("Post", style: TextStyle(fontWeight: FontWeight.bold)),
+                          : Text("Post", style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),

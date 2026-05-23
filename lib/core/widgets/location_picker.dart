@@ -239,13 +239,13 @@ class _LocationPickerState extends State<LocationPicker> {
           ),
 
           // Marker Pointer (Always in middle of map view for visual aid)
-          const Center(
+          Center(
             child: Padding(
-              padding: EdgeInsets.only(bottom: 35), // Offset to point tip
+              padding: const EdgeInsets.only(bottom: 35), // Offset to point tip
               child: Icon(
                 Icons.location_on,
                 size: 40,
-                color: Colors.red,
+                color: Theme.of(context).colorScheme.error,
               ),
             ),
           ),
@@ -256,8 +256,8 @@ class _LocationPickerState extends State<LocationPicker> {
               left: 20,
               right: 20,
               child: Card(
-                color: Colors.white.withOpacity(0.9),
-                child: Padding(
+                  color: Theme.of(context).cardColor.withOpacity(0.9),
+                  child: Padding(
                   padding: const EdgeInsets.all(12.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -279,6 +279,7 @@ class _LocationPickerState extends State<LocationPicker> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: null,
         onPressed: _getCurrentLocation,
         child: const Icon(Icons.my_location),
       ),

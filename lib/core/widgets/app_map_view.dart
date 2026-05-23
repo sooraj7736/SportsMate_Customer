@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 class AppMapView extends StatelessWidget {
-  final OnMapCreated? onMapCreated;
+  final MapCreatedCallback? onMapCreated;
 
   const AppMapView({super.key, this.onMapCreated});
 

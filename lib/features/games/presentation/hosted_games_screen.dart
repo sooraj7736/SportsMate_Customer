@@ -19,24 +19,20 @@ class HostedGamesScreen extends ConsumerWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 24),
                 padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [
+                  boxShadow: [
                     BoxShadow(
-                      color: Color(0x12000000),
+                      color: Theme.of(context).shadowColor.withOpacity(0.12),
                       blurRadius: 20,
-                      offset: Offset(0, 10),
+                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
-                child: const Text(
+                child: Text(
                   'You haven\'t hosted any games yet.\nCreate one to get started!',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
               ),
             );
@@ -135,20 +131,12 @@ class _HostedGameCard extends StatelessWidget {
                       children: [
                         Text(
                           game.sportType,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                            color: Colors.black87,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, fontSize: 16),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           game.locationName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 12,
-                            color: Colors.black54,
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w500, fontSize: 12),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -163,11 +151,7 @@ class _HostedGameCard extends StatelessWidget {
                     ),
                     child: Text(
                       '$participantCount/$maxPlayers',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: _primaryGreen,
-                      ),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 12, fontWeight: FontWeight.w800, color: _primaryGreen),
                     ),
                   ),
                 ],
@@ -175,7 +159,7 @@ class _HostedGameCard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  const Icon(Icons.calendar_month_outlined, size: 16, color: Colors.black54),
+                  Icon(Icons.calendar_month_outlined, size: 16, color: Theme.of(context).iconTheme.color),
                   const SizedBox(width: 6),
                   Text(
                     DateFormat('EEE, MMM d • h:mm a').format(
@@ -185,26 +169,18 @@ class _HostedGameCard extends StatelessWidget {
                         game.date.day,
                       ),
                     ),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.black54,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 12, fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.schedule_outlined, size: 16, color: Colors.black54),
+                  Icon(Icons.schedule_outlined, size: 16, color: Theme.of(context).iconTheme.color),
                   const SizedBox(width: 6),
                   Text(
                     '${_formatTime(game.startTime)} - ${_formatTime(game.endTime)}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.black54,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 12, fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
@@ -228,9 +204,9 @@ class _ParticipantsBottomSheet extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
         child: SafeArea(
@@ -244,28 +220,17 @@ class _ParticipantsBottomSheet extends StatelessWidget {
                   width: 42,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.black12,
+                    color: Theme.of(context).dividerColor.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-              Text(
-                'Players Registered',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.black87,
-                ),
-              ),
+              Text('Players Registered', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 20, fontWeight: FontWeight.w800)),
               const SizedBox(height: 6),
               Text(
                 '${game.joinedPlayers.length} player${game.joinedPlayers.length != 1 ? 's' : ''} joined',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[700],
-                  fontWeight: FontWeight.w500,
-                ),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 13, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 16),
               Flexible(
@@ -279,9 +244,9 @@ class _ParticipantsBottomSheet extends StatelessWidget {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF7F9FC),
+                        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.04),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+                        border: Border.all(color: Theme.of(context).dividerColor.withOpacity(0.05)),
                       ),
                       child: Row(
                         children: [
@@ -304,11 +269,7 @@ class _ParticipantsBottomSheet extends StatelessWidget {
                               children: [
                                 Text(
                                   player.name,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.black87,
-                                  ),
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 14, fontWeight: FontWeight.w700),
                                 ),
                                 if (player.isGuest) ...[
                                   const SizedBox(height: 2),
