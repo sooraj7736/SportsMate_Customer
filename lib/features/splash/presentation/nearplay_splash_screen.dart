@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lottie/lottie.dart'; 
 import '../../../main_wrapper.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/common_providers.dart';
@@ -17,32 +18,23 @@ class NearPlaySplashScreen extends ConsumerStatefulWidget {
   ConsumerState<NearPlaySplashScreen> createState() => _NearPlaySplashScreenState();
 }
 
-class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _opacityAnimation;
+class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen>
+    with SingleTickerProviderStateMixin { // Required mixin for manual playback driving
+  
+  late final AnimationController _lottieController;
 
   @override
   void initState() {
     super.initState();
-    
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
+    // Initialize our manual engine controller
+    _lottieController = AnimationController(vsync: this);
 
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
-    );
-
-    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
-    );
-
-    _animationController.forward();
-    
     if (!widget.isStatic) {
-      _preloadAndInitialize();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _preloadAndInitialize();
+        }
+      });
     }
   }
 
@@ -50,17 +42,16 @@ class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen> wit
     final startTime = DateTime.now();
 
     try {
-      // Precache image assets to avoid flickering later.
-      await precacheImage(const AssetImage('assets/nearplay.png'), context);
       await precacheImage(const AssetImage('assets/icon_nearplay.png'), context);
-
-      _warmUpData();
+      await _warmUpData();
     } catch (e) {
-      debugPrint("Preloading failed or timed out: $e");
+      debugPrint("Preloading data failed: $e");
     }
 
     final elapsed = DateTime.now().difference(startTime);
-    final remainingDelay = const Duration(seconds: 2) - elapsed;
+    final minimumDisplayDuration = const Duration(seconds: 4);
+    
+    final remainingDelay = minimumDisplayDuration - elapsed;
     if (remainingDelay > Duration.zero) {
       await Future.delayed(remainingDelay);
     }
@@ -84,9 +75,7 @@ class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen> wit
         ref.read(feedListStreamProvider.future).catchError((_) => <FeedEntity>[]),
         ref.read(adListStreamProvider.future).catchError((_) => <AdEntity>[]),
       ]).timeout(const Duration(seconds: 5));
-    } catch (_) {
-      // Ignore preload failures; navigation should not be blocked.
-    }
+    } catch (_) {}
   }
 
   void _navigateToMain() {
@@ -103,7 +92,7 @@ class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen> wit
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _lottieController.dispose(); // Clean up controller resources to protect memory
     super.dispose();
   }
 
@@ -114,52 +103,93 @@ class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen> wit
       body: Stack(
         children: [
           Center(
-            child: AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, child) {
-                return Opacity(
-                  opacity: _opacityAnimation.value,
-                  child: Transform.scale(
-                    scale: _scaleAnimation.value,
-                    child: child,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 320,
+                  height: 240,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // 1. Radial Backdrop Glow
+                      Container(
+                        width: 200,
+                        height: 200,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              Color(0x4443A047),
+                              Colors.transparent,
+                            ],
+                            stops: [0.0, 1.0],
+                          ),
+                        ),
+                      ),
+                      
+                      // 2. Static Background Image
+                      Opacity(
+                        opacity: 0.35, 
+                        child: Image.asset(
+                          'assets/icon_nearplay.png',
+                          width: 140,
+                          height: 140,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      
+                      // 3. Forced Manual-Drive Lottie Layer
+                      Positioned.fill(
+                        child: Lottie.asset(
+                          'assets/animations/splash_logo.json',
+                          controller: _lottieController, // Link manual controller
+                          fit: BoxFit.contain,
+                          onLoaded: (composition) {
+                            // Assign vector length metadata to our controller
+                            _lottieController.duration = composition.duration;
+                            
+                            // FORCE JUMP-START: Wait 1 frame for layout stability, then ignite the loop
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (mounted) {
+                                _lottieController.repeat();
+                                debugPrint("🚀 Lottie engine forced loop kicked off successfully!");
+                              }
+                            });
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            debugPrint('CRITICAL Lottie parse error: $error');
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                );
-              },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: Image.asset(
-                      'assets/nearplay.png',
-                      height: 140,
-                      fit: BoxFit.contain,
-                    ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Play Near. Play Now.",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 1.2,
                   ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    "Play Near. Play Now.",
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
+          
           const Positioned(
             bottom: 60,
             left: 0,
             right: 0,
             child: Center(
               child: SizedBox(
-                width: 32,
-                height: 32,
+                width: 28,
+                height: 28,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
+                  strokeWidth: 2.0,
                   valueColor: AlwaysStoppedAnimation<Color>(Color(0xCC0F5132)),
                 ),
               ),
