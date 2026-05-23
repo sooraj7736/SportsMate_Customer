@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:gif/gif.dart';
 import '../../../main_wrapper.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/common_providers.dart';
@@ -17,11 +18,14 @@ class NearPlaySplashScreen extends ConsumerStatefulWidget {
   ConsumerState<NearPlaySplashScreen> createState() => _NearPlaySplashScreenState();
 }
 
-class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen> {
+class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen>
+    with SingleTickerProviderStateMixin {
+  late final GifController _gifController;
 
   @override
   void initState() {
     super.initState();
+    _gifController = GifController(vsync: this);
     if (!widget.isStatic) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -84,6 +88,12 @@ class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen> {
   }
 
   @override
+  void dispose() {
+    _gifController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.deepPitch, 
@@ -119,10 +129,22 @@ class _NearPlaySplashScreenState extends ConsumerState<NearPlaySplashScreen> {
                       
                       // 3. Animated GIF layer
                       Positioned.fill(
-                        child: Image.asset(
-                          'assets/animations/splash_logo.gif',
+                        child: Gif(
+                          image: const AssetImage('assets/animations/splash_logo.gif'),
+                          controller: _gifController,
+                          autostart: Autostart.no,
                           fit: BoxFit.contain,
-                          gaplessPlayback: true,
+                          onFetchCompleted: () {
+                            _gifController
+                              ..reset()
+                              ..forward();
+                          },
+                          // placeholder: (context) => Image.asset(
+                          //   'assets/icon_nearplay.png',
+                          //   width: 140,
+                          //   height: 140,
+                          //   fit: BoxFit.contain,
+                          // ),
                         ),
                       ),
                     ],
